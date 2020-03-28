@@ -88,12 +88,6 @@ namespace MultiplayerARPG
             gameObject.tag = CurrentGameInstance.monsterTag;
         }
 
-        protected override void EntityStart()
-        {
-            base.EntityStart();
-            InitStats();
-        }
-
         protected override void EntityUpdate()
         {
             Profiler.BeginSample("BaseMonsterCharacterEntity - Update");
@@ -122,9 +116,6 @@ namespace MultiplayerARPG
             if (!IsServer)
                 return;
 
-            if (SpawnArea == null)
-                SpawnPosition = CacheTransform.position;
-
             if (Level <= 0)
                 Level = MonsterDatabase.defaultLevel;
 
@@ -138,9 +129,9 @@ namespace MultiplayerARPG
 
         public void SetSpawnArea(MonsterSpawnArea spawnArea, Vector3 spawnPosition)
         {
-            this.SpawnArea = spawnArea;
+            SpawnArea = spawnArea;
             FindGroundedPosition(spawnPosition, 512f, out spawnPosition);
-            this.SpawnPosition = spawnPosition;
+            SpawnPosition = spawnPosition;
         }
 
         protected override void SetupNetElements()
@@ -173,6 +164,9 @@ namespace MultiplayerARPG
                 InstantiateUI(CurrentGameInstance.monsterCharacterUI);
 
             InitStats();
+
+            if (SpawnArea == null)
+                SpawnPosition = CacheTransform.position;
         }
 
         public void SetAttackTarget(BaseCharacterEntity target)

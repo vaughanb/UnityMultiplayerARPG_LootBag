@@ -53,7 +53,9 @@ namespace MultiplayerARPG
         [SerializeField]
         private float findTargetRaycastDistance = 16f;
         [SerializeField]
-        private bool showConfirmConstructionUI;
+        private bool showConfirmConstructionUI = false;
+        [SerializeField]
+        private float buildRotateAngle = 45f;
         [SerializeField]
         private RectTransform crosshairRect;
 
@@ -194,6 +196,7 @@ namespace MultiplayerARPG
         bool toggleCrouchOn;
         bool toggleCrawlOn;
         ControllerViewMode? viewModeBeforeDead;
+        float buildYRotate;
         public BaseWeaponAbility WeaponAbility { get; private set; }
         public WeaponAbilityState WeaponAbilityState { get; private set; }
 
@@ -379,9 +382,7 @@ namespace MultiplayerARPG
             cameraRight.Normalize();
 
             // Update look target and aim position
-            if (ConstructingBuildingEntity != null)
-                UpdateTarget_BuildingMode();
-            else
+            if (ConstructingBuildingEntity == null)
                 UpdateTarget_BattleMode();
 
             // Update movement and camera pitch
@@ -392,10 +393,10 @@ namespace MultiplayerARPG
             PlayerCharacterEntity.AimPosition = aimPosition;
 
             // Update input
-            if (ConstructingBuildingEntity != null)
-                UpdateInputs_BuildingMode();
-            else
+            if (ConstructingBuildingEntity == null)
                 UpdateInputs_BattleMode();
+            else
+                UpdateInputs_BuildMode();
 
             // Hide Npc UIs when move
             if (moveDirection.sqrMagnitude > 0f)
@@ -472,55 +473,6 @@ namespace MultiplayerARPG
                     break;
             }
             return state;
-        }
-
-        private void UpdateTarget_BuildingMode()
-        {
-            // Clear area before next find
-            ConstructingBuildingEntity.BuildingArea = null;
-            // Default aim position (aim to sky/space)
-            aimPosition = centerRay.origin + centerRay.direction * (centerRayToCharacterDist + CurrentGameInstance.buildDistance);
-            // Raycast from camera position to center of screen
-            int tempCount = PhysicUtils.SortedRaycastNonAlloc3D(centerRay.origin, centerRay.direction, raycasts, findTargetRaycastDistance, CurrentGameInstance.GetBuildLayerMask());
-            float tempDistance;
-            BuildingArea buildingArea;
-            for (int tempCounter = 0; tempCounter < tempCount; ++tempCounter)
-            {
-                tempHitInfo = raycasts[tempCounter];
-
-                // Set aim position
-                tempDistance = Vector3.Distance(CacheGameplayCameraTransform.position, tempHitInfo.point);
-                if (IsInFront(tempHitInfo.point))
-                {
-                    aimPosition = tempHitInfo.point;
-                    buildingArea = tempHitInfo.transform.GetComponent<BuildingArea>();
-                    if (buildingArea == null ||
-                        (buildingArea.Entity && buildingArea.GetObjectId() == ConstructingBuildingEntity.ObjectId) ||
-                        !ConstructingBuildingEntity.buildingTypes.Contains(buildingArea.buildingType))
-                    {
-                        // Skip because this area is not allowed to build the building that you are going to build
-                        continue;
-                    }
-                    
-                    ConstructingBuildingEntity.BuildingArea = buildingArea;
-                    if (!buildingArea.snapBuildingObject)
-                    {
-                        // There is no snap build position, set building rotation by camera look direction
-                        ConstructingBuildingEntity.CacheTransform.position = aimPosition;
-                        // Rotate to camera
-                        Vector3 direction = (aimPosition - CacheGameplayCameraTransform.position).normalized;
-                        direction.y = 0;
-                        ConstructingBuildingEntity.CacheTransform.rotation = Quaternion.LookRotation(direction);
-                    }
-                    break;
-                }
-            }
-
-            if (Vector3.Distance(PlayerCharacterEntity.CacheTransform.position, aimPosition) > CurrentGameInstance.buildDistance)
-            {
-                // Mark as unable to build when the building is far from character
-                ConstructingBuildingEntity.BuildingArea = null;
-            }
         }
 
         private void UpdateTarget_BattleMode()
@@ -678,32 +630,6 @@ namespace MultiplayerARPG
             }
 
             moveDirection.Normalize();
-        }
-
-        private void UpdateInputs_BuildingMode()
-        {
-            mustReleaseFireKey = false;
-            // Building
-            tempPressAttackRight = GetPrimaryAttackButtonUp();
-            if (tempPressAttackRight)
-            {
-                if (showConfirmConstructionUI)
-                {
-                    // Show confirm UI
-                    ShowConstructBuildingDialog();
-                }
-                else
-                {
-                    // Build when click
-                    ConfirmBuild();
-                }
-            }
-            else
-            {
-                // Update move direction
-                if (moveDirection.sqrMagnitude > 0f && ViewMode == ControllerViewMode.Tps)
-                    targetLookDirection = moveLookDirection;
-            }
         }
 
         private void UpdateInputs_BattleMode()
@@ -897,6 +823,13 @@ namespace MultiplayerARPG
             }
         }
 
+        private void UpdateInputs_BuildMode()
+        {
+            // Update move direction
+            if (moveDirection.sqrMagnitude > 0f && ViewMode == ControllerViewMode.Tps)
+                targetLookDirection = moveLookDirection;
+        }
+
         private void ReloadAmmo()
         {
             // Reload ammo at server
@@ -1010,9 +943,6 @@ namespace MultiplayerARPG
             if (hotkeyIndex < 0 || hotkeyIndex >= PlayerCharacterEntity.Hotkeys.Count)
                 return;
 
-            CancelBuild();
-            buildingItemIndex = -1;
-            ConstructingBuildingEntity = null;
             ClearQueueUsingSkill();
 
             CharacterHotkey hotkey = PlayerCharacterEntity.Hotkeys[hotkeyIndex];
@@ -1067,23 +997,28 @@ namespace MultiplayerARPG
             {
                 PlayerCharacterEntity.RequestEquipItem((short)itemIndex);
             }
-            else if (item.IsUsable())
+            else if (item.IsSkill())
             {
-                if (item.IsSkill())
-                {
-                    SetQueueUsingSkill(aimPosition, (item as ISkillItem).UsingSkill, (item as ISkillItem).UsingSkillLevel, (short)itemIndex);
-                }
-                else
-                {
-                    PlayerCharacterEntity.RequestUseItem((short)itemIndex);
-                }
+                SetQueueUsingSkill(aimPosition, (item as ISkillItem).UsingSkill, (item as ISkillItem).UsingSkillLevel, (short)itemIndex);
             }
             else if (item.IsBuilding())
             {
                 buildingItemIndex = itemIndex;
-                ConstructingBuildingEntity = Instantiate((item as IBuildingItem).BuildingEntity);
-                ConstructingBuildingEntity.SetupAsBuildMode();
-                ConstructingBuildingEntity.CacheTransform.parent = null;
+                if (showConfirmConstructionUI)
+                {
+                    // Show confirm UI
+                    ShowConstructBuildingDialog();
+                }
+                else
+                {
+                    // Build when click
+                    ConfirmBuild();
+                }
+                mustReleaseFireKey = true;
+            }
+            else if (item.IsUsable())
+            {
+                PlayerCharacterEntity.RequestUseItem((short)itemIndex);
             }
         }
 
@@ -1247,6 +1182,77 @@ namespace MultiplayerARPG
         public bool IsInFront(Vector3 position)
         {
             return Vector3.Angle(cameraForward, PlayerCharacterEntity.CacheTransform.position - position) > 135f;
+        }
+
+        public override Vector3? UpdateBuildAimControls(Vector2 aimAxes, BuildingEntity prefab)
+        {
+            // Instantiate constructing building
+            if (ConstructingBuildingEntity == null)
+            {
+                InstantiateConstructingBuilding(prefab);
+                buildYRotate = 0f;
+            }
+            // Rotate by keys
+            if (InputManager.GetButtonDown("RotateLeft"))
+                buildYRotate -= buildRotateAngle;
+            else if (InputManager.GetButtonDown("RotateRight"))
+                buildYRotate += buildRotateAngle;
+            // Clear area before next find
+            ConstructingBuildingEntity.BuildingArea = null;
+            // Default aim position (aim to sky/space)
+            aimPosition = centerRay.origin + centerRay.direction * (centerRayToCharacterDist + ConstructingBuildingEntity.buildDistance);
+            // Raycast from camera position to center of screen
+            int tempCount = PhysicUtils.SortedRaycastNonAlloc3D(centerRay.origin, centerRay.direction, raycasts, 100f, CurrentGameInstance.GetBuildLayerMask());
+            float tempDistance;
+            BuildingArea buildingArea;
+            for (int tempCounter = 0; tempCounter < tempCount; ++tempCounter)
+            {
+                tempHitInfo = raycasts[tempCounter];
+
+                // Set aim position
+                tempDistance = Vector3.Distance(CacheGameplayCameraTransform.position, tempHitInfo.point);
+                if (!IsInFront(tempHitInfo.point))
+                {
+                    // Skip because this position is not allowed to build the building
+                    continue;
+                }
+
+                aimPosition = tempHitInfo.point;
+                buildingArea = tempHitInfo.transform.GetComponent<BuildingArea>();
+                if (buildingArea == null ||
+                    (buildingArea.Entity && buildingArea.GetObjectId() == ConstructingBuildingEntity.ObjectId) ||
+                    !ConstructingBuildingEntity.buildingTypes.Contains(buildingArea.buildingType))
+                {
+                    // Skip because this area is not allowed to build the building
+                    continue;
+                }
+
+                ConstructingBuildingEntity.BuildingArea = buildingArea;
+                if (!buildingArea.snapBuildingObject)
+                {
+                    // There is no snap build position, set building rotation by camera look direction
+                    ConstructingBuildingEntity.CacheTransform.position = GameplayUtils.ClampPosition(MovementTransform.position, aimPosition, ConstructingBuildingEntity.buildDistance);
+                    // Rotate to camera
+                    Vector3 direction = (aimPosition - CacheGameplayCameraTransform.position).normalized;
+                    direction.y = 0;
+                    ConstructingBuildingEntity.CacheTransform.eulerAngles = Quaternion.LookRotation(direction).eulerAngles + (Vector3.up * buildYRotate);
+                }
+                break;
+            }
+
+            if (Vector3.Distance(PlayerCharacterEntity.CacheTransform.position, aimPosition) > ConstructingBuildingEntity.buildDistance)
+            {
+                // Mark as unable to build when the building is far from character
+                ConstructingBuildingEntity.BuildingArea = null;
+            }
+
+            return ConstructingBuildingEntity.Position;
+        }
+
+        public override void FinishBuildAimControls(bool isCancel)
+        {
+            if (isCancel)
+                CancelBuild();
         }
     }
 }

@@ -38,6 +38,7 @@ namespace MultiplayerARPG
         public bool buildGridSnap;
         public float buildGridSize = 4f;
         public bool buildRotationSnap;
+        public float buildRotateAngle = 45f;
 
         protected bool isSprinting;
         protected Vector3? destination;

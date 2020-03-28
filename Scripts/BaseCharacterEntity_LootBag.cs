@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using LiteNetLibManager;
+using System;
 
 namespace MultiplayerARPG
 {
@@ -118,26 +119,16 @@ namespace MultiplayerARPG
         }
 
         /// <summary>
-        /// Moves an item from the specified monster's loot bag to the player's inventory.
+        /// Moves an item from the specified monster's loot bag to a slot in the player's 
+        /// inventory. If no specific destination slot is specified, the first available slot is
+        /// chosen.
         /// </summary>
         /// <param name="objectId">ID of the source object to loot from</param>
         /// <param name="lootBagIndex">index of the item to look in the loot bag</param>
         /// <param name="nonEquipIndex">index of the inventory slot to place the item</param>
-        protected void NetFuncPickupLootBagItem(uint objectId, short lootBagIndex, short nonEquipIndex)
+        protected virtual void NetFuncPickupLootBagItem(uint objectId, short lootBagIndex, short nonEquipIndex)
         {
-            BaseMonsterCharacterEntity monsterCharacterEntity = GetTargetEntity() as BaseMonsterCharacterEntity;
-            if (monsterCharacterEntity == null || monsterCharacterEntity.ObjectId != objectId)
-            {
-                var monsterCharacters = FindObjectsOfType(typeof(BaseMonsterCharacterEntity));
-                foreach (BaseMonsterCharacterEntity monsterCharacter in monsterCharacters)
-                {
-                    if (monsterCharacter.ObjectId == objectId)
-                    {
-                        monsterCharacterEntity = monsterCharacter;
-                        break;
-                    }
-                }
-            }
+            BaseMonsterCharacterEntity monsterCharacterEntity = GetMonsterCharacterEntity(objectId);
 
             if (monsterCharacterEntity == null || monsterCharacterEntity.LootBag.Count == 0)
                 return;
@@ -147,43 +138,48 @@ namespace MultiplayerARPG
 
             CharacterItem lootItem = monsterCharacterEntity.LootBag[lootBagIndex].Clone();
 
-            int destIndex = -1;
-            if (nonEquipIndex < 0 || nonEquipIndex > NonEquipItems.Count - 1 || !NonEquipItems[nonEquipIndex].IsEmptySlot())
+            if (nonEquipIndex < 0)
             {
-                if (nonEquipIndex > 0 && nonEquipIndex < NonEquipItems.Count &&
-                    NonEquipItems[nonEquipIndex].dataId == lootItem.dataId &&
-                    NonEquipItems[nonEquipIndex].amount + lootItem.amount <= lootItem.GetMaxStack())
+                if (lootItem.IsEmptySlot())
+                    monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
+                if (!this.IncreasingItemsWillOverwhelming(lootItem.dataId, lootItem.amount) && this.IncreaseItems(lootItem))
                 {
-                    destIndex = nonEquipIndex;
-                    lootItem.amount += NonEquipItems[nonEquipIndex].amount;
-                }
-                else
-                {
-                    int firstEmptySlot = -1;
-                    for (int i = 0; i < NonEquipItems.Count; i++)
-                    {
-                        if (firstEmptySlot < 0 && NonEquipItems[i].IsEmptySlot())
-                            firstEmptySlot = i;
-
-                        if (NonEquipItems[i].dataId == lootItem.dataId && NonEquipItems[i].amount + lootItem.amount <= lootItem.GetMaxStack())
-                        {
-                            destIndex = i;
-                            lootItem.amount += NonEquipItems[i].amount;
-                            break;
-                        }
-                    }
-
-                    if (destIndex < 0)
-                        destIndex = firstEmptySlot;
+                    this.FillEmptySlots();
+                    monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
                 }
             }
             else
-                destIndex = nonEquipIndex;
-
-            if (destIndex >= 0)
             {
-                monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
-                nonEquipItems[destIndex] = lootItem;
+                CharacterItem toItem = NonEquipItems[nonEquipIndex];
+
+                if (lootItem.dataId == NonEquipItems[nonEquipIndex].dataId && !lootItem.IsFull() && !toItem.IsFull())
+                {
+                    short maxStack = toItem.GetMaxStack();
+                    if (toItem.amount + lootItem.amount <= maxStack)
+                    {
+                        toItem.amount += lootItem.amount;
+                        monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
+                        NonEquipItems[nonEquipIndex] = toItem;
+                        this.FillEmptySlots();
+                    }
+                    else
+                    {
+                        short remains = (short)(toItem.amount + lootItem.amount - maxStack);
+                        toItem.amount = maxStack;
+                        lootItem.amount = remains;
+                        monsterCharacterEntity.LootBag[lootBagIndex] = lootItem;
+                        NonEquipItems[nonEquipIndex] = toItem;
+                    }
+                }
+                else
+                {
+                    if (toItem.IsEmptySlot())
+                        monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
+                    else
+                        monsterCharacterEntity.LootBag[lootBagIndex] = toItem;
+
+                    NonEquipItems[nonEquipIndex] = lootItem;
+                }
             }
         }
 
@@ -192,6 +188,40 @@ namespace MultiplayerARPG
         /// <param name="objectId">ID of the source object to loot from</param>
         /// </summary>
         protected virtual void NetFuncPickupAllLootBagItems(uint objectId)
+        {
+            BaseMonsterCharacterEntity monsterCharacterEntity = GetMonsterCharacterEntity(objectId);
+
+            if (monsterCharacterEntity == null || monsterCharacterEntity.LootBag.Count == 0)
+                return;
+
+            Stack<int> itemsToRemove = new Stack<int>();
+
+            for (int i = 0; i < monsterCharacterEntity.LootBag.Count; i++)
+            {
+                CharacterItem lootItem = monsterCharacterEntity.LootBag[i].Clone();
+
+                if (lootItem.IsEmptySlot())
+                {
+                    itemsToRemove.Push(i);
+                    continue;
+                }
+                if (!this.IncreasingItemsWillOverwhelming(lootItem.dataId, lootItem.amount) && this.IncreaseItems(lootItem))
+                {
+                    this.FillEmptySlots();
+                    itemsToRemove.Push(i);
+                }
+            }
+
+            foreach (int itemIndex in itemsToRemove)
+                monsterCharacterEntity.RemoveLootItemAt(itemIndex);
+        }
+
+        /// <summary>
+        /// Returns the BaseMonsterCharacterEntity for the provided object ID.
+        /// </summary>
+        /// <param name="objectId">Object ID of the monster entity to return</param>
+        /// <returns>BaseMonsterCharacterEntity</returns>
+        private BaseMonsterCharacterEntity GetMonsterCharacterEntity(uint objectId)
         {
             BaseMonsterCharacterEntity monsterCharacterEntity = GetTargetEntity() as BaseMonsterCharacterEntity;
             if (monsterCharacterEntity == null || monsterCharacterEntity.ObjectId != objectId)
@@ -206,44 +236,7 @@ namespace MultiplayerARPG
                     }
                 }
             }
-
-            if (monsterCharacterEntity == null || monsterCharacterEntity.LootBag.Count == 0)
-                return;
-
-            List<CharacterItem> itemsToRemove = new List<CharacterItem>();
-
-            foreach (CharacterItem lootItem in monsterCharacterEntity.LootBag)
-            {
-                CharacterItem lootItemClone = lootItem.Clone();
-
-                int destIndex = -1;
-                int firstEmptySlot = -1;
-                for (int i = 0; i < NonEquipItems.Count; i++)
-                {
-                    if (firstEmptySlot < 0 && NonEquipItems[i].IsEmptySlot())
-                        firstEmptySlot = i;
-
-                    if (NonEquipItems[i].dataId == lootItem.dataId && NonEquipItems[i].amount + lootItem.amount <= lootItem.GetMaxStack())
-                    {
-                        destIndex = (short)i;
-                        lootItemClone.amount += NonEquipItems[i].amount;
-                        break;
-                    }
-                }
-
-                if (destIndex < 0)
-                    destIndex = firstEmptySlot;
-
-                if (destIndex >= 0)
-                {
-                    nonEquipItems[destIndex] = lootItemClone;
-                    itemsToRemove.Add(lootItem);
-                }
-                else
-                    break;
-            }
-
-            monsterCharacterEntity.RemoveLootItems(itemsToRemove);
+            return monsterCharacterEntity;
         }
     }
 }

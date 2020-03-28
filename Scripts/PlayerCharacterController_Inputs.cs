@@ -20,7 +20,7 @@ namespace MultiplayerARPG
 
             if (isFocusInputField)
                 return;
-            
+
             if (PlayerCharacterEntity.IsDead())
                 return;
 
@@ -152,7 +152,6 @@ namespace MultiplayerARPG
             // Update inputs
             UpdatePointClickInput();
             UpdateWASDInput();
-            UpdateBuilding();
             // Set sprinting state
             PlayerCharacterEntity.SetExtraMovement(isSprinting ? ExtraMovementState.IsSprinting : ExtraMovementState.None);
         }
@@ -410,7 +409,6 @@ namespace MultiplayerARPG
             {
                 HideNpcDialog();
                 ClearQueueUsingSkill();
-                FindAndSetBuildingAreaFromCharacterDirection();
             }
 
             // Attack when player pressed attack button
@@ -532,20 +530,6 @@ namespace MultiplayerARPG
                     // Target not required, use skill immediately
                     RequestUsePendingSkill();
                 }
-            }
-        }
-
-        public void UpdateBuilding()
-        {
-            if (ConstructingBuildingEntity == null)
-                return;
-
-            bool isPointerOverUI = CacheUISceneGameplay != null && CacheUISceneGameplay.IsPointerOverUIObject();
-            if (Input.GetMouseButton(0) && !isPointerOverUI)
-            {
-                mouseDownTime = Time.unscaledTime;
-                mouseDownPosition = Input.mousePosition;
-                FindAndSetBuildingAreaFromMousePosition();
             }
         }
 
@@ -718,7 +702,7 @@ namespace MultiplayerARPG
 
         protected void UseSkillOrMoveToEntity(IDamageableEntity entity, float distance)
         {
-            if (entity.GetObjectId() == PlayerCharacterEntity.GetObjectId() || 
+            if (entity.GetObjectId() == PlayerCharacterEntity.GetObjectId() ||
                 Vector3.Distance(MovementTransform.position, entity.GetTransform().position) <= distance)
             {
                 // Stop movement to use skill
@@ -726,7 +710,7 @@ namespace MultiplayerARPG
                 // Turn character to attacking target
                 TurnCharacterToEntity(entity.Entity);
                 // Set direction to turn character to target, now use fov = 10, to make character always turn to target
-                if (entity.GetObjectId() == PlayerCharacterEntity.GetObjectId() || 
+                if (entity.GetObjectId() == PlayerCharacterEntity.GetObjectId() ||
                     PlayerCharacterEntity.IsPositionInFov(10f, entity.GetTransform().position))
                 {
                     if (queueUsingSkill.skill != null)
@@ -793,9 +777,6 @@ namespace MultiplayerARPG
             if (hotkeyIndex < 0 || hotkeyIndex >= PlayerCharacterEntity.Hotkeys.Count)
                 return;
 
-            CancelBuild();
-            buildingItemIndex = -1;
-            ConstructingBuildingEntity = null;
             ClearQueueUsingSkill();
 
             CharacterHotkey hotkey = PlayerCharacterEntity.Hotkeys[hotkeyIndex];
@@ -924,41 +905,58 @@ namespace MultiplayerARPG
             {
                 PlayerCharacterEntity.RequestEquipItem((short)itemIndex);
             }
-            else if (item.IsUsable())
+            else if (item.IsSkill())
             {
-                if (item.IsSkill())
-                {
-                    // Set aim position to use immediately (don't add to queue)
-                    BaseSkill skill = (item as ISkillItem).UsingSkill;
-                    short skillLevel = (item as ISkillItem).UsingSkillLevel;
-                    UseSkill(
-                        skill,
-                        skillLevel,
-                        () => SetQueueUsingSkill(aimPosition, skill, skillLevel, (short)itemIndex),
-                        () =>
-                        {
-                            if (!aimPosition.HasValue)
-                                PlayerCharacterEntity.RequestUseSkillItem((short)itemIndex, isLeftHandAttacking);
-                            else
-                                PlayerCharacterEntity.RequestUseSkillItem((short)itemIndex, isLeftHandAttacking, aimPosition.Value);
-                        });
-                }
-                else
-                {
-                    PlayerCharacterEntity.RequestUseItem((short)itemIndex);
-                }
+                // Set aim position to use immediately (don't add to queue)
+                BaseSkill skill = (item as ISkillItem).UsingSkill;
+                short skillLevel = (item as ISkillItem).UsingSkillLevel;
+                UseSkill(
+                    skill,
+                    skillLevel,
+                    () => SetQueueUsingSkill(aimPosition, skill, skillLevel, (short)itemIndex),
+                    () =>
+                    {
+                        if (!aimPosition.HasValue)
+                            PlayerCharacterEntity.RequestUseSkillItem((short)itemIndex, isLeftHandAttacking);
+                        else
+                            PlayerCharacterEntity.RequestUseSkillItem((short)itemIndex, isLeftHandAttacking, aimPosition.Value);
+                    });
             }
             else if (item.IsBuilding())
             {
                 destination = null;
                 PlayerCharacterEntity.StopMove();
                 buildingItemIndex = itemIndex;
-                ConstructingBuildingEntity = Instantiate((item as IBuildingItem).BuildingEntity);
-                ConstructingBuildingEntity.SetupAsBuildMode();
-                ConstructingBuildingEntity.CacheTransform.parent = null;
-                FindAndSetBuildingAreaFromCharacterDirection();
                 ShowConstructBuildingDialog();
             }
+            else if (item.IsUsable())
+            {
+                PlayerCharacterEntity.RequestUseItem((short)itemIndex);
+            }
+        }
+
+        public override Vector3? UpdateBuildAimControls(Vector2 aimAxes, BuildingEntity prefab)
+        {
+            // Instantiate constructing building
+            if (ConstructingBuildingEntity == null)
+                InstantiateConstructingBuilding(prefab);
+            // Rotate by keys
+            if (InputManager.GetButtonDown("RotateLeft"))
+                ConstructingBuildingEntity.CacheTransform.eulerAngles -= Vector3.up * buildRotateAngle;
+            else if (InputManager.GetButtonDown("RotateRight"))
+                ConstructingBuildingEntity.CacheTransform.eulerAngles += Vector3.up * buildRotateAngle;
+            // Find position to place building
+            if (InputManager.useMobileInputOnNonMobile || Application.isMobilePlatform)
+                FindAndSetBuildingAreaByAxes(aimAxes);
+            else
+                FindAndSetBuildingAreaByMousePosition();
+            return ConstructingBuildingEntity.Position;
+        }
+
+        public override void FinishBuildAimControls(bool isCancel)
+        {
+            if (isCancel)
+                CancelBuild();
         }
     }
 }
