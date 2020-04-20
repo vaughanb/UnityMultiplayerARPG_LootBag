@@ -74,6 +74,8 @@ namespace MultiplayerARPG
         private float tpsNearClipPlane = 0.3f;
         [SerializeField]
         private float tpsFarClipPlane = 1000f;
+        [SerializeField]
+        private bool turnForwardWhileDoingAction;
 
         [Header("FPS Settings")]
         [SerializeField]
@@ -155,7 +157,7 @@ namespace MultiplayerARPG
         IDamageableEntity tempDamageableEntity;
         BaseGameEntity tempEntity;
         Ray centerRay;
-        float centerRayToCharacterDist;
+        float centerOriginToCharacterDistance;
         Vector3 moveDirection;
         Vector3 cameraForward;
         Vector3 cameraRight;
@@ -182,6 +184,7 @@ namespace MultiplayerARPG
         RaycastHit tempHitInfo;
         float pitch;
         Vector3 aimPosition;
+        Vector3 aimDirection;
         // Crosshair
         public Vector2 CurrentCrosshairSize { get; private set; }
         public CrosshairSetting CurrentCrosshairSetting { get; private set; }
@@ -373,7 +376,7 @@ namespace MultiplayerARPG
 
             // Prepare variables to find nearest raycasted hit point
             centerRay = CacheGameplayCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-            centerRayToCharacterDist = Vector3.Distance(centerRay.origin, MovementTransform.position);
+            centerOriginToCharacterDistance = Vector3.Distance(centerRay.origin, MovementTransform.position);
             cameraForward = CacheGameplayCameraTransform.forward;
             cameraRight = CacheGameplayCameraTransform.right;
             cameraForward.y = 0f;
@@ -482,7 +485,11 @@ namespace MultiplayerARPG
             float attackFov = 90f;
             // Calculating aim distance, also read attack inputs here
             // Attack inputs will be used to calculate attack distance
-            if (ConstructingBuildingEntity == null)
+            if (IsUsingHotkey())
+            {
+                mustReleaseFireKey = true;
+            }
+            else
             {
                 // Attack with right hand weapon
                 tempPressAttackRight = GetPrimaryAttackButton();
@@ -519,7 +526,7 @@ namespace MultiplayerARPG
                 }
             }
             // Default aim position (aim to sky/space)
-            aimPosition = centerRay.origin + centerRay.direction * (centerRayToCharacterDist + attackDistance);
+            aimPosition = centerRay.origin + centerRay.direction * (centerOriginToCharacterDistance + attackDistance);
             // Raycast from camera position to center of screen
             int tempCount = PhysicUtils.SortedRaycastNonAlloc3D(centerRay.origin, centerRay.direction, raycasts, findTargetRaycastDistance, Physics.AllLayers);
             float tempDistance;
@@ -535,6 +542,10 @@ namespace MultiplayerARPG
                 {
                     tempEntity = tempDamageableEntity.Entity;
 
+                    // Entity is in front of character, so this is target
+                    if (turnForwardWhileDoingAction && !IsInFront(tempHitInfo.point))
+                        continue;
+
                     // Target must be damageable, not player character entity, within aim distance and alive
                     if (tempDamageableEntity.GetObjectId() == PlayerCharacterEntity.ObjectId)
                         continue;
@@ -545,36 +556,34 @@ namespace MultiplayerARPG
                         continue;
 
                     // Entity is in front of character, so this is target
-                    if (IsInFront(tempHitInfo.point))
-                    {
-                        aimPosition = tempHitInfo.point;
-                        SelectedEntity = tempEntity;
-                        break;
-                    }
+                    aimPosition = tempHitInfo.point;
+                    SelectedEntity = tempEntity;
+                    break;
                 }
                 // Find item drop entity
                 tempEntity = tempHitInfo.collider.GetComponent<ItemDropEntity>();
-                if (tempEntity != null && tempDistance <= CurrentGameInstance.pickUpItemDistance)
+                if (tempEntity != null && tempDistance <= CurrentGameInstance.pickUpItemDistance &&
+                    (!turnForwardWhileDoingAction || IsInFront(tempHitInfo.point)))
                 {
                     // Entity is in front of character, so this is target
-                    if (IsInFront(tempHitInfo.point))
-                    {
-                        SelectedEntity = tempEntity;
-                        break;
-                    }
+                    aimPosition = tempHitInfo.point;
+                    SelectedEntity = tempEntity;
+                    break;
                 }
                 // Find activatable entity (NPC/Building/Mount/Etc)
                 tempEntity = tempHitInfo.collider.GetComponent<BaseGameEntity>();
-                if (tempEntity != null && tempDistance <= CurrentGameInstance.conversationDistance)
+                if (tempEntity != null && tempDistance <= CurrentGameInstance.conversationDistance &&
+                    (!turnForwardWhileDoingAction || IsInFront(tempHitInfo.point)))
                 {
                     // Entity is in front of character, so this is target
-                    if (IsInFront(tempHitInfo.point))
-                    {
-                        SelectedEntity = tempEntity;
-                        break;
-                    }
+                    aimPosition = tempHitInfo.point;
+                    SelectedEntity = tempEntity;
+                    break;
                 }
             }
+            aimDirection = aimPosition - MovementTransform.position;
+            aimDirection.y = 0f;
+            aimDirection.Normalize();
             // Show target hp/mp
             CacheUISceneGameplay.SetTargetEntity(SelectedEntity);
             PlayerCharacterEntity.SetTargetEntity(SelectedEntity);
@@ -682,13 +691,21 @@ namespace MultiplayerARPG
                             targetVehicle = SelectedEntity as VehicleEntity;
                     }
                 }
-                // While attacking turn character to camera forward
-                tempCalculateAngle = Vector3.Angle(MovementTransform.forward, cameraForward);
+                // While attacking turn character to aim direction
+                tempCalculateAngle = Vector3.Angle(MovementTransform.forward, aimDirection);
 
                 if (PlayerCharacterEntity.IsPlayingActionAnimation())
                 {
                     // Just look at camera forward while character playing action animation
-                    targetLookDirection = cameraForward;
+                    switch (ViewMode)
+                    {
+                        case ControllerViewMode.Fps:
+                            targetLookDirection = cameraForward;
+                            break;
+                        case ControllerViewMode.Tps:
+                            targetLookDirection = turnForwardWhileDoingAction ? cameraForward : aimDirection;
+                            break;
+                    }
                 }
                 else if (tempCalculateAngle > 15f && ViewMode == ControllerViewMode.Tps)
                 {
@@ -712,7 +729,7 @@ namespace MultiplayerARPG
                     }
                     // Calculate turn duration to smoothing character rotation in `UpdateLookAtTarget()`
                     calculatedTurnDuration = (180f - tempCalculateAngle) / 180f * turnToTargetDuration;
-                    targetLookDirection = cameraForward;
+                    targetLookDirection = turnForwardWhileDoingAction ? cameraForward : aimDirection;
                     // Set movement state by inputs
                     if (inputV > 0.5f)
                         movementState |= MovementState.Forward;
@@ -1092,9 +1109,19 @@ namespace MultiplayerARPG
             if (queueUsingSkill.skill != null)
             {
                 if (queueUsingSkill.itemIndex >= 0)
-                    PlayerCharacterEntity.RequestUseSkillItem(queueUsingSkill.itemIndex, isLeftHand, queueUsingSkill.aimPosition.HasValue ? queueUsingSkill.aimPosition.Value : defaultAimPosition);
+                {
+                    if (queueUsingSkill.aimPosition.HasValue)
+                        PlayerCharacterEntity.RequestUseSkillItem(queueUsingSkill.itemIndex, isLeftHand, queueUsingSkill.aimPosition.Value);
+                    else
+                        PlayerCharacterEntity.RequestUseSkillItem(queueUsingSkill.itemIndex, isLeftHand);
+                }
                 else
-                    PlayerCharacterEntity.RequestUseSkill(queueUsingSkill.skill.DataId, isLeftHand, queueUsingSkill.aimPosition.HasValue ? queueUsingSkill.aimPosition.Value : defaultAimPosition);
+                {
+                    if (queueUsingSkill.aimPosition.HasValue)
+                        PlayerCharacterEntity.RequestUseSkill(queueUsingSkill.skill.DataId, isLeftHand, queueUsingSkill.aimPosition.Value);
+                    else
+                        PlayerCharacterEntity.RequestUseSkill(queueUsingSkill.skill.DataId, isLeftHand);
+                }
             }
             ClearQueueUsingSkill();
         }
@@ -1116,23 +1143,25 @@ namespace MultiplayerARPG
             return false;
         }
 
-        public bool GetPrimaryAttackButton()
+        public bool IsUsingHotkey()
         {
             // Check using hotkey for PC only
             if (!InputManager.useMobileInputOnNonMobile &&
                 !Application.isMobilePlatform &&
                 UICharacterHotkeys.UsingHotkey != null)
-                return false;
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public bool GetPrimaryAttackButton()
+        {
             return InputManager.GetButton("Fire1") || InputManager.GetButton("Attack");
         }
 
         public bool GetSecondaryAttackButton()
         {
-            // Check using hotkey for PC only
-            if (!InputManager.useMobileInputOnNonMobile &&
-                !Application.isMobilePlatform &&
-                UICharacterHotkeys.UsingHotkey != null)
-                return false;
             return InputManager.GetButton("Fire2");
         }
 
@@ -1181,7 +1210,7 @@ namespace MultiplayerARPG
 
         public bool IsInFront(Vector3 position)
         {
-            return Vector3.Angle(cameraForward, PlayerCharacterEntity.CacheTransform.position - position) > 135f;
+            return Vector3.Angle(cameraForward, MovementTransform.position - position) > 135f;
         }
 
         public override Vector3? UpdateBuildAimControls(Vector2 aimAxes, BuildingEntity prefab)
@@ -1200,7 +1229,7 @@ namespace MultiplayerARPG
             // Clear area before next find
             ConstructingBuildingEntity.BuildingArea = null;
             // Default aim position (aim to sky/space)
-            aimPosition = centerRay.origin + centerRay.direction * (centerRayToCharacterDist + ConstructingBuildingEntity.buildDistance);
+            aimPosition = centerRay.origin + centerRay.direction * (centerOriginToCharacterDistance + ConstructingBuildingEntity.buildDistance);
             // Raycast from camera position to center of screen
             int tempCount = PhysicUtils.SortedRaycastNonAlloc3D(centerRay.origin, centerRay.direction, raycasts, 100f, CurrentGameInstance.GetBuildLayerMask());
             float tempDistance;
@@ -1233,8 +1262,9 @@ namespace MultiplayerARPG
                     // There is no snap build position, set building rotation by camera look direction
                     ConstructingBuildingEntity.CacheTransform.position = GameplayUtils.ClampPosition(MovementTransform.position, aimPosition, ConstructingBuildingEntity.buildDistance);
                     // Rotate to camera
-                    Vector3 direction = (aimPosition - CacheGameplayCameraTransform.position).normalized;
-                    direction.y = 0;
+                    Vector3 direction = aimPosition - CacheGameplayCameraTransform.position;
+                    direction.y = 0f;
+                    direction.Normalize();
                     ConstructingBuildingEntity.CacheTransform.eulerAngles = Quaternion.LookRotation(direction).eulerAngles + (Vector3.up * buildYRotate);
                 }
                 break;

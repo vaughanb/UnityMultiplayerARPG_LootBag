@@ -169,16 +169,17 @@ namespace MultiplayerARPG
                 SpawnPosition = CacheTransform.position;
         }
 
-        public void SetAttackTarget(BaseCharacterEntity target)
+        public void SetAttackTarget(IDamageableEntity target)
         {
-            if (target == null || target.IsDead())
+            if (target == null || target.Entity == Entity ||
+                target.IsDead() || !target.CanReceiveDamageFrom(this))
                 return;
             // Already have target so don't set target
-            BaseCharacterEntity oldTarget;
+            IDamageableEntity oldTarget;
             if (TryGetTargetEntity(out oldTarget) && !oldTarget.IsDead())
                 return;
             // Set target to attack
-            SetTargetEntity(target);
+            SetTargetEntity(target.Entity);
         }
 
         public override float GetMoveSpeed()
@@ -272,12 +273,12 @@ namespace MultiplayerARPG
 
         public override float GetAttackDistance(bool isLeftHand)
         {
-            return MonsterDatabase.damageInfo.GetDistance();
+            return MonsterDatabase.DamageInfo.GetDistance();
         }
 
         public override float GetAttackFov(bool isLeftHand)
         {
-            return MonsterDatabase.damageInfo.GetFov();
+            return MonsterDatabase.DamageInfo.GetFov();
         }
 
         public override void ReceivedDamage(IGameEntity attacker, CombatAmountType damageAmountType, int damage)
@@ -573,6 +574,23 @@ namespace MultiplayerARPG
             if ((Summoner && Summoner == ally) ||
                 MonsterDatabase.characteristic == MonsterCharacteristic.Assist)
                 SetAttackTarget(attacker);
+        }
+
+        public override float GetMoveSpeedRateWhileAttackOrUseSkill(AnimActionType animActionType, BaseSkill skill)
+        {
+            switch (animActionType)
+            {
+                case AnimActionType.AttackRightHand:
+                case AnimActionType.AttackLeftHand:
+                    return MonsterDatabase.MoveSpeedRateWhileAttacking;
+                case AnimActionType.SkillRightHand:
+                case AnimActionType.SkillLeftHand:
+                    // Calculate move speed rate while doing action at clients and server
+                    if (skill != null)
+                        return skill.moveSpeedRateWhileUsingSkill;
+                    break;
+            }
+            return 1f;
         }
     }
 

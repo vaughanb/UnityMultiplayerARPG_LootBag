@@ -345,10 +345,9 @@ namespace MultiplayerARPG
                         {
                             destination = null;
                         }
-                        else
+                        else if (!PlayerCharacterEntity.IsPlayingActionAnimation())
                         {
                             destination = targetPosition.Value;
-                            targetLookDirection = null;
                             PlayerCharacterEntity.PointClickMovement(targetPosition.Value);
                         }
                     }
@@ -422,8 +421,10 @@ namespace MultiplayerARPG
             {
                 destination = null;
                 ClearTarget();
-                targetLookDirection = moveDirection;
+                if (!PlayerCharacterEntity.IsPlayingActionAnimation())
+                    PlayerCharacterEntity.SetLookRotation(Quaternion.LookRotation(moveDirection));
             }
+
             // Always forward
             MovementState movementState = MovementState.Forward;
             if (InputManager.GetButtonDown("Jump"))
@@ -686,12 +687,8 @@ namespace MultiplayerARPG
                 PlayerCharacterEntity.StopMove();
                 // Turn character to attacking target
                 TurnCharacterToEntity(entity.Entity);
-                // Set direction to turn character to target, now use fov = 10, to make character always turn to target
-                if (PlayerCharacterEntity.IsPositionInFov(10f, entity.GetTransform().position))
-                {
-                    // Do action
-                    action.Invoke();
-                }
+                // Do action
+                action.Invoke();
             }
             else
             {
@@ -709,24 +706,20 @@ namespace MultiplayerARPG
                 PlayerCharacterEntity.StopMove();
                 // Turn character to attacking target
                 TurnCharacterToEntity(entity.Entity);
-                // Set direction to turn character to target, now use fov = 10, to make character always turn to target
-                if (entity.GetObjectId() == PlayerCharacterEntity.GetObjectId() ||
-                    PlayerCharacterEntity.IsPositionInFov(10f, entity.GetTransform().position))
+                // Use the skill
+                if (queueUsingSkill.skill != null)
                 {
-                    if (queueUsingSkill.skill != null)
-                    {
-                        // Can use skill
-                        RequestUsePendingSkill();
-                        targetActionType = TargetActionType.Undefined;
-                        return;
-                    }
-                    else
-                    {
-                        // Can't use skill
-                        targetActionType = TargetActionType.Undefined;
-                        ClearQueueUsingSkill();
-                        return;
-                    }
+                    // Can use skill
+                    RequestUsePendingSkill();
+                    targetActionType = TargetActionType.Undefined;
+                    return;
+                }
+                else
+                {
+                    // Can't use skill
+                    targetActionType = TargetActionType.Undefined;
+                    ClearQueueUsingSkill();
+                    return;
                 }
             }
             else
@@ -740,6 +733,10 @@ namespace MultiplayerARPG
         {
             if (entity == null)
                 return;
+
+            if (PlayerCharacterEntity.IsPlayingActionAnimation())
+                return;
+
             Vector3 direction = (entity.CacheTransform.position - MovementTransform.position).normalized;
             Vector3 position = entity.CacheTransform.position - (direction * (distance - StoppingDistance));
             if (Vector3.Distance(previousPointClickPosition, position) > 0.01f)
@@ -753,23 +750,9 @@ namespace MultiplayerARPG
         {
             if (entity == null)
                 return;
-            targetLookDirection = (entity.CacheTransform.position - MovementTransform.position).normalized;
-        }
-
-        public void UpdateLookAtTarget()
-        {
-            if (targetLookDirection.HasValue && Vector3.Angle(tempLookAt * Vector3.forward, targetLookDirection.Value) > 1)
-            {
-                // Update rotation when angle difference more than 1
-                tempLookAt = Quaternion.RotateTowards(tempLookAt, Quaternion.LookRotation(targetLookDirection.Value), Time.deltaTime * angularSpeed);
-                PlayerCharacterEntity.SetLookRotation(tempLookAt);
-            }
-            else
-            {
-                // Update temp look at to character's rotation
-                tempLookAt = PlayerCharacterEntity.GetLookRotation();
-                targetLookDirection = null;
-            }
+            Vector3 lookAtDirection = (entity.CacheTransform.position - MovementTransform.position).normalized;
+            if (lookAtDirection.sqrMagnitude > 0)
+                PlayerCharacterEntity.SetLookRotation(Quaternion.LookRotation(lookAtDirection));
         }
 
         public override void UseHotkey(int hotkeyIndex, Vector3? aimPosition)
