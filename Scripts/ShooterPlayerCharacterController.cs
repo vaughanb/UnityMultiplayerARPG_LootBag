@@ -562,21 +562,21 @@ namespace MultiplayerARPG
                 }
                 // Find item drop entity
                 tempEntity = tempHitInfo.collider.GetComponent<ItemDropEntity>();
-                if (tempEntity != null && tempDistance <= CurrentGameInstance.pickUpItemDistance &&
-                    (!turnForwardWhileDoingAction || IsInFront(tempHitInfo.point)))
+                if (tempEntity != null && tempDistance <= CurrentGameInstance.pickUpItemDistance)
                 {
                     // Entity is in front of character, so this is target
-                    aimPosition = tempHitInfo.point;
+                    if (!turnForwardWhileDoingAction || IsInFront(tempHitInfo.point))
+                        aimPosition = tempHitInfo.point;
                     SelectedEntity = tempEntity;
                     break;
                 }
                 // Find activatable entity (NPC/Building/Mount/Etc)
                 tempEntity = tempHitInfo.collider.GetComponent<BaseGameEntity>();
-                if (tempEntity != null && tempDistance <= CurrentGameInstance.conversationDistance &&
-                    (!turnForwardWhileDoingAction || IsInFront(tempHitInfo.point)))
+                if (tempEntity != null && tempDistance <= CurrentGameInstance.conversationDistance)
                 {
                     // Entity is in front of character, so this is target
-                    aimPosition = tempHitInfo.point;
+                    if (!turnForwardWhileDoingAction || IsInFront(tempHitInfo.point))
+                        aimPosition = tempHitInfo.point;
                     SelectedEntity = tempEntity;
                     break;
                 }
@@ -785,12 +785,12 @@ namespace MultiplayerARPG
             }
             else if (pickupItemInput.IsPress)
             {
-                // If target is character with lootbag, open it
+                // If target is entity with lootbag, open it
                 if (SelectedEntity != null && SelectedEntity is BaseCharacterEntity)
                 {
                     BaseCharacterEntity c = SelectedEntity as BaseCharacterEntity;
                     if (c != null && c.IsDead() && c.useLootBag)
-                        (CacheUISceneGameplay as UISceneGameplay).OnShowLootBag();
+                        (CacheUISceneGameplay as UISceneGameplay).OnShowLootBag(c);
                 }
                 // Otherwise find item to pick up
                 else if (SelectedEntity != null && SelectedEntity is ItemDropEntity)
@@ -955,21 +955,16 @@ namespace MultiplayerARPG
             }
         }
 
-        public override void UseHotkey(int hotkeyIndex, Vector3? aimPosition)
+        public override void UseHotkey(HotkeyType type, string relateId, Vector3? aimPosition)
         {
-            if (hotkeyIndex < 0 || hotkeyIndex >= PlayerCharacterEntity.Hotkeys.Count)
-                return;
-
             ClearQueueUsingSkill();
-
-            CharacterHotkey hotkey = PlayerCharacterEntity.Hotkeys[hotkeyIndex];
-            switch (hotkey.type)
+            switch (type)
             {
                 case HotkeyType.Skill:
-                    UseSkill(hotkey.relateId, aimPosition);
+                    UseSkill(relateId, aimPosition);
                     break;
                 case HotkeyType.Item:
-                    UseItem(hotkey.relateId, aimPosition);
+                    UseItem(relateId, aimPosition);
                     break;
             }
         }

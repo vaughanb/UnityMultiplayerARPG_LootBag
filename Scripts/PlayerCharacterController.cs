@@ -15,9 +15,10 @@ namespace MultiplayerARPG
 
         public enum TargetActionType
         {
-            Undefined,
+            Activate,
             Attack,
             UseSkill,
+            ViewOptions,
             Loot
         }
         
@@ -25,10 +26,12 @@ namespace MultiplayerARPG
         public const float DETECT_MOUSE_HOLD_DURATION = 1f;
         
         public PlayerCharacterControllerMode controllerMode;
-        [Tooltip("Set this to TRUE to find nearby enemy and look to it while attacking when `Controller Mode` is `WASD`")]
+        [Tooltip("Set this to `TRUE` to find nearby enemy and follow it to attack while `Controller Mode` is `WASD`")]
         public bool wasdLockAttackTarget;
-        [Tooltip("This will be used to find nearby enemy when `Controller Mode` is `Point Click` or when `Wasd Lock Attack Target` is `TRUE`")]
+        [Tooltip("This will be used to find nearby enemy while `Controller Mode` is `Point Click` or when `Wasd Lock Attack Target` is `TRUE`")]
         public float lockAttackTargetDistance = 10f;
+        [Tooltip("This will be used to clear selected target when character move with WASD keys and far from target")]
+        public float wasdClearTargetDistance = 15f;
         [Tooltip("Set this to TRUE to move to target immediately when clicked on target, if this is FALSE it will not move to target immediately")]
         public bool pointClickSetTargetImmediately;
         public GameObject targetObjectPrefab;
@@ -58,7 +61,8 @@ namespace MultiplayerARPG
         protected bool isMouseDragDetected;
         protected bool isMouseHoldDetected;
         protected bool isMouseHoldAndNotDrag;
-        protected BaseCharacterEntity targetCharacter;
+        protected DamageableEntity targetDamageable;
+        protected BaseCharacterEntity targetCharacterEntity;
         protected BasePlayerCharacterEntity targetPlayer;
         protected BaseMonsterCharacterEntity targetMonster;
         protected NpcEntity targetNpc;
@@ -66,13 +70,13 @@ namespace MultiplayerARPG
         protected BuildingEntity targetBuilding;
         protected VehicleEntity targetVehicle;
         protected HarvestableEntity targetHarvestable;
-        protected Quaternion tempLookAt;
         protected Vector3 previousPointClickPosition = Vector3.positiveInfinity;
         public NearbyEntityDetector ActivatableEntityDetector { get; protected set; }
         public NearbyEntityDetector ItemDropEntityDetector { get; protected set; }
         public NearbyEntityDetector EnemyEntityDetector { get; protected set; }
         protected int findingEnemyIndex;
         protected bool isLeftHandAttacking;
+        protected bool isFollowingTarget;
 
         protected override void Awake()
         {
@@ -115,16 +119,6 @@ namespace MultiplayerARPG
             EnemyEntityDetector.findMonsterToAttack = true;
         }
 
-        protected override void Setup(BasePlayerCharacterEntity characterEntity)
-        {
-            base.Setup(characterEntity);
-
-            if (characterEntity == null)
-                return;
-
-            tempLookAt = MovementTransform.rotation;
-        }
-
         protected override void OnDestroy()
         {
             base.OnDestroy();
@@ -152,6 +146,7 @@ namespace MultiplayerARPG
             {
                 ClearQueueUsingSkill();
                 destination = null;
+                isFollowingTarget = false;
                 if (CacheUISceneGameplay != null)
                     CacheUISceneGameplay.SetTargetEntity(null);
                 CancelBuild();
@@ -207,40 +202,49 @@ namespace MultiplayerARPG
             return false;
         }
 
-        public bool TryGetAttackingCharacter(out BaseCharacterEntity character)
+        public bool TryGetAttackingEntity<T>(out T entity)
+            where T : DamageableEntity
         {
-            character = null;
-            if (targetActionType != TargetActionType.Attack)
+            if (!TryGetDoActionEntity(out entity, TargetActionType.Attack))
                 return false;
-
-            if (TargetEntity != null)
+            if (entity == PlayerCharacterEntity || !entity.CanReceiveDamageFrom(PlayerCharacterEntity))
             {
-                character = TargetEntity as BaseCharacterEntity;
-                if (character != null &&
-                    character != PlayerCharacterEntity &&
-                    character.CanReceiveDamageFrom(PlayerCharacterEntity))
-                    return true;
-                else
-                    character = null;
+                entity = null;
+                return false;
             }
-            return false;
+            return true;
         }
 
-        public bool TryGetUsingSkillCharacter(out BaseCharacterEntity character)
+        public bool TryGetUsingSkillEntity<T>(out T entity)
+            where T : DamageableEntity
         {
-            character = null;
-            if (targetActionType != TargetActionType.UseSkill)
+            if (!TryGetDoActionEntity(out entity, TargetActionType.UseSkill))
                 return false;
-
-            if (TargetEntity != null)
+            if (queueUsingSkill.skill == null)
             {
-                character = TargetEntity as BaseCharacterEntity;
-                if (character != null)
-                    return true;
-                else
-                    character = null;
+                entity = null;
+                return false;
             }
-            return false;
+            return true;
+        }
+
+        public bool TryGetDoActionEntity<T>(out T entity, TargetActionType actionType = TargetActionType.Activate)
+            where T : BaseGameEntity
+        {
+            entity = null;
+            if (targetActionType != actionType)
+                return false;
+            if (TargetEntity == null)
+                return false;
+            entity = TargetEntity as T;
+            if (entity == null)
+                return false;
+            return true;
+        }
+
+        public bool EntityIsHideOrDead(DamageableEntity entity)
+        {
+            return entity.IsDead() || (entity is BaseCharacterEntity && (entity as BaseCharacterEntity).IsHideOrDead);
         }
 
         public bool TryGetTargetCharacter(out BaseCharacterEntity character)
@@ -256,7 +260,7 @@ namespace MultiplayerARPG
             if (TargetEntity != null && TargetEntity is BaseCharacterEntity)
             {
                 character = TargetEntity as BaseCharacterEntity;
-                if (character.IsDead() && character.LootBag.Count > 0)
+                if (character.IsDead() && character.useLootBag && character.LootBag.Count > 0)
                     return true;
                 else
                     character = null;
@@ -288,13 +292,6 @@ namespace MultiplayerARPG
                 castFov = queueUsingSkill.skill.GetCastFov(PlayerCharacterEntity, queueUsingSkill.level, false);
             }
             castDistance -= PlayerCharacterEntity.StoppingDistance;
-        }
-
-        public bool IsLockTarget()
-        {
-            return controllerMode == PlayerCharacterControllerMode.Both ||
-                controllerMode == PlayerCharacterControllerMode.PointClick ||
-                (controllerMode == PlayerCharacterControllerMode.WASD && wasdLockAttackTarget);
         }
 
         public Vector3 GetMoveDirection(float horizontalInput, float verticalInput)

@@ -86,12 +86,12 @@ namespace MultiplayerARPG
                 {
                     if (EnemyEntityDetector.characters.Count > 0)
                     {
-                        foreach (BaseCharacterEntity character in EnemyEntityDetector.characters)
+                        foreach (BaseCharacterEntity characterEntity in EnemyEntityDetector.characters)
                         {
-                            if (character.IsDead() && character.useLootBag && character.LootBag.Count > 0)
+                            if (characterEntity.IsDead() && characterEntity.useLootBag && characterEntity.LootBag.Count > 0)
                             {
-                                SetTarget(character, TargetActionType.Loot);
-                                (CacheUISceneGameplay as UISceneGameplay).OnShowLootBag(character);
+                                SetTarget(characterEntity, TargetActionType.Loot);
+                                (CacheUISceneGameplay as UISceneGameplay).OnShowLootBag(characterEntity);
                                 break;
                             }
                         }
@@ -112,8 +112,7 @@ namespace MultiplayerARPG
                     if (EnemyEntityDetector.characters.Count > 0)
                     {
                         SetTarget(null, TargetActionType.Attack);
-                        if (!EnemyEntityDetector.characters[findingEnemyIndex].GetCaches().IsHide &&
-                            !EnemyEntityDetector.characters[findingEnemyIndex].IsDead())
+                        if (!EnemyEntityDetector.characters[findingEnemyIndex].IsHideOrDead)
                         {
                             SetTarget(EnemyEntityDetector.characters[findingEnemyIndex], TargetActionType.Attack);
                             if (SelectedEntity != null)
@@ -148,8 +147,9 @@ namespace MultiplayerARPG
                 }
             }
             // Update enemy detecting radius to attack distance
-            EnemyEntityDetector.detectingRadius = PlayerCharacterEntity.GetAttackDistance(false) + lockAttackTargetDistance;
+            EnemyEntityDetector.detectingRadius = Mathf.Max(PlayerCharacterEntity.GetAttackDistance(false), lockAttackTargetDistance);
             // Update inputs
+            UpdateQueuedSkill();
             UpdatePointClickInput();
             UpdateWASDInput();
             // Set sprinting state
@@ -167,6 +167,9 @@ namespace MultiplayerARPG
 
         public virtual void UpdatePointClickInput()
         {
+            if (controllerMode == PlayerCharacterControllerMode.WASD)
+                return;
+
             // If it's building something, not allow point click movement
             if (ConstructingBuildingEntity != null)
                 return;
@@ -218,19 +221,19 @@ namespace MultiplayerARPG
                     {
                         targetBuilding = null;
                         tempBuildingMaterial = tempTransform.GetComponent<BuildingMaterial>();
-                        if (tempBuildingMaterial != null && tempBuildingMaterial.entity != null)
-                            targetBuilding = tempBuildingMaterial.entity;
+                        if (tempBuildingMaterial != null && tempBuildingMaterial.TargetEntity != null)
+                            targetBuilding = tempBuildingMaterial.TargetEntity;
                         if (targetBuilding && !targetBuilding.IsDead())
                         {
-                            SetTarget(targetBuilding, TargetActionType.Undefined);
-                            IsEditingBuilding = true;
+                            SetTarget(targetBuilding, TargetActionType.ViewOptions);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
                             break;
                         }
                     }
-                    // When clicking on target
                     else if (mouseUpOnTarget)
                     {
+                        targetCharacterEntity = tempTransform.GetComponent <BaseCharacterEntity>();
                         targetPlayer = tempTransform.GetComponent<BasePlayerCharacterEntity>();
                         targetMonster = tempTransform.GetComponent<BaseMonsterCharacterEntity>();
                         targetNpc = tempTransform.GetComponent<NpcEntity>();
@@ -238,63 +241,71 @@ namespace MultiplayerARPG
                         targetHarvestable = tempTransform.GetComponent<HarvestableEntity>();
                         targetBuilding = null;
                         tempBuildingMaterial = tempTransform.GetComponent<BuildingMaterial>();
-                        if (tempBuildingMaterial != null && tempBuildingMaterial.entity != null)
-                            targetBuilding = tempBuildingMaterial.entity;
+                        if (tempBuildingMaterial != null && tempBuildingMaterial.TargetEntity != null)
+                            targetBuilding = tempBuildingMaterial.TargetEntity;
                         targetVehicle = tempTransform.GetComponent<VehicleEntity>();
                         lastNpcObjectId = 0;
-                        if (targetPlayer && !targetPlayer.GetCaches().IsHide)
+                        if (targetCharacterEntity && targetCharacterEntity.IsDead() && targetCharacterEntity.useLootBag)
                         {
-                            // Found activating entity as player character entity
-                            SetTarget(targetPlayer, TargetActionType.Attack);
+                            // Found activating entity as lootable character entity
+                            SetTarget(targetCharacterEntity, TargetActionType.Loot);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
                             break;
                         }
-                        else if (targetCharacter && targetCharacter.IsDead() && targetCharacter.LootBag.Count > 0)
+                        if (targetPlayer && !targetPlayer.IsHideOrDead)
                         {
-                            // Found activating entity as character entity with loot bag
-                            SetTarget(targetCharacter, TargetActionType.Loot);
+                            // Found activating entity as player character entity
+                            SetTarget(targetPlayer, TargetActionType.Attack);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
+                            break;
                         }
-                        else if (targetMonster && !targetMonster.GetCaches().IsHide)
+                        else if (targetMonster && !targetMonster.IsHideOrDead)
                         {
                             // Found activating entity as monster character entity
                             SetTarget(targetMonster, TargetActionType.Attack);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
                             break;
                         }
                         else if (targetNpc)
                         {
                             // Found activating entity as npc entity
-                            SetTarget(targetNpc, TargetActionType.Undefined);
+                            SetTarget(targetNpc, TargetActionType.Activate);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
                             break;
                         }
                         else if (targetItemDrop)
                         {
                             // Found activating entity as item drop entity
-                            SetTarget(targetItemDrop, TargetActionType.Undefined);
+                            SetTarget(targetItemDrop, TargetActionType.Activate);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
                             break;
                         }
                         else if (targetHarvestable && !targetHarvestable.IsDead())
                         {
                             // Found activating entity as harvestable entity
-                            SetTarget(targetHarvestable, TargetActionType.Undefined);
+                            SetTarget(targetHarvestable, TargetActionType.Attack);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
                             break;
                         }
                         else if (targetBuilding && !targetBuilding.IsDead() && targetBuilding.Activatable)
                         {
                             // Found activating entity as building entity
-                            SetTarget(targetBuilding, TargetActionType.Undefined);
-                            IsEditingBuilding = false;
+                            SetTarget(targetBuilding, TargetActionType.Activate);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
                             break;
                         }
                         else if (targetVehicle)
                         {
                             // Found activating entity as vehicle entity
-                            SetTarget(targetVehicle, TargetActionType.Undefined);
+                            SetTarget(targetVehicle, TargetActionType.Activate);
+                            isFollowingTarget = true;
                             tempHasMapPosition = false;
                             break;
                         }
@@ -306,7 +317,7 @@ namespace MultiplayerARPG
                             if (tempMapPosition.y > tempHighestY)
                                 tempHighestY = tempMapPosition.y;
                         }
-                    }
+                    } // End mouseUpOnTarget
                 }
                 // When clicked on map (Not touch any game entity)
                 // - Clear selected target to hide selected entity UIs
@@ -327,29 +338,18 @@ namespace MultiplayerARPG
                     tempVector3.z = 0;
                     targetPosition = tempVector3;
                 }
-                // If Found target, do something
+
+                // Found ground position
                 if (targetPosition.HasValue)
                 {
-                    if (controllerMode == PlayerCharacterControllerMode.WASD)
+                    // Close NPC dialog, when target changes
+                    HideNpcDialog();
+                    ClearQueueUsingSkill();
+                    isFollowingTarget = false;
+                    if (!PlayerCharacterEntity.IsPlayingActionAnimation())
                     {
-                        destination = null;
-                    }
-                    else
-                    {
-                        // Close NPC dialog, when target changes
-                        HideNpcDialog();
-                        ClearQueueUsingSkill();
-
-                        // Move to target, will hide destination when target is object
-                        if (TargetEntity != null)
-                        {
-                            destination = null;
-                        }
-                        else if (!PlayerCharacterEntity.IsPlayingActionAnimation())
-                        {
-                            destination = targetPosition.Value;
-                            PlayerCharacterEntity.PointClickMovement(targetPosition.Value);
-                        }
+                        destination = targetPosition.Value;
+                        PlayerCharacterEntity.PointClickMovement(targetPosition.Value);
                     }
                 }
             }
@@ -384,7 +384,7 @@ namespace MultiplayerARPG
             TargetEntity = null;
             PlayerCharacterEntity.SetTargetEntity(null);
             targetPosition = null;
-            targetActionType = TargetActionType.Undefined;
+            targetActionType = TargetActionType.Activate;
         }
 
         public override void DeselectBuilding()
@@ -395,8 +395,7 @@ namespace MultiplayerARPG
 
         public virtual void UpdateWASDInput()
         {
-            if (controllerMode != PlayerCharacterControllerMode.WASD &&
-                controllerMode != PlayerCharacterControllerMode.Both)
+            if (controllerMode == PlayerCharacterControllerMode.PointClick)
                 return;
 
             // If mobile platforms, don't receive input raw to make it smooth
@@ -404,26 +403,25 @@ namespace MultiplayerARPG
             Vector3 moveDirection = GetMoveDirection(InputManager.GetAxis("Horizontal", raw), InputManager.GetAxis("Vertical", raw));
             moveDirection.Normalize();
 
+            // Move
             if (moveDirection.sqrMagnitude > 0f)
             {
                 HideNpcDialog();
                 ClearQueueUsingSkill();
-            }
-
-            // Attack when player pressed attack button
-            if (queueUsingSkill.skill != null)
-                UpdateWASDPendingSkill(queueUsingSkill.skill, queueUsingSkill.level);
-            else if (InputManager.GetButton("Attack"))
-                UpdateWASDAttack();
-
-            // Move
-            if (moveDirection.sqrMagnitude > 0f)
-            {
                 destination = null;
-                ClearTarget();
+                isFollowingTarget = false;
+                if (TargetEntity != null && Vector3.Distance(MovementTransform.position, TargetEntity.CacheTransform.position) >= wasdClearTargetDistance)
+                {
+                    // Clear target when character moved far from target
+                    ClearTarget();
+                }
                 if (!PlayerCharacterEntity.IsPlayingActionAnimation())
                     PlayerCharacterEntity.SetLookRotation(Quaternion.LookRotation(moveDirection));
             }
+
+            // Attack when player pressed attack button
+            if (InputManager.GetButton("Attack"))
+                UpdateWASDAttack();
 
             // Always forward
             MovementState movementState = MovementState.Forward;
@@ -440,28 +438,34 @@ namespace MultiplayerARPG
             if (TryGetSelectedTargetAsAttackingEntity(out targetEntity))
                 SetTarget(targetEntity, TargetActionType.Attack, false);
 
-            if (IsLockTarget() && !TryGetAttackingCharacter(out targetEntity))
+            if (wasdLockAttackTarget)
             {
-                // Find nearest target and move to the target
-                SelectedEntity = PlayerCharacterEntity
-                    .FindNearestAliveCharacter<BaseCharacterEntity>(
-                    PlayerCharacterEntity.GetAttackDistance(isLeftHandAttacking) + lockAttackTargetDistance,
-                    false,
-                    true,
-                    false);
-                if (SelectedEntity != null)
+                if (!TryGetAttackingEntity(out targetEntity) || targetEntity.IsHideOrDead)
+                {
+                    // Find nearest target and move to the target
+                    targetEntity = PlayerCharacterEntity
+                        .FindNearestAliveCharacter<BaseCharacterEntity>(
+                        Mathf.Max(PlayerCharacterEntity.GetAttackDistance(isLeftHandAttacking), lockAttackTargetDistance),
+                        false,
+                        true,
+                        false);
+                }
+                if (targetEntity != null && !targetEntity.IsHideOrDead)
                 {
                     // Set target, then attack later when moved nearby target
-                    SetTarget(SelectedEntity, TargetActionType.Attack, false);
+                    SelectedEntity = targetEntity;
+                    SetTarget(targetEntity, TargetActionType.Attack, false);
+                    isFollowingTarget = true;
                 }
                 else
                 {
                     // No nearby target, so attack immediately
                     if (PlayerCharacterEntity.RequestAttack(isLeftHandAttacking))
                         isLeftHandAttacking = !isLeftHandAttacking;
+                    isFollowingTarget = false;
                 }
             }
-            else if (!IsLockTarget())
+            else if (!wasdLockAttackTarget)
             {
                 // Find nearest target and set selected target to show character hp/mp UIs
                 SelectedEntity = PlayerCharacterEntity
@@ -469,48 +473,93 @@ namespace MultiplayerARPG
                     PlayerCharacterEntity.GetAttackDistance(isLeftHandAttacking),
                     false,
                     true,
-                    false,
-                    true,
-                    PlayerCharacterEntity.GetAttackFov(isLeftHandAttacking));
+                    false);
+                if (SelectedEntity != null)
+                {
+                    // Look at target and attack
+                    TurnCharacterToEntity(SelectedEntity);
+                }
                 // Not lock target, so not finding target and attack immediately
                 if (PlayerCharacterEntity.RequestAttack(isLeftHandAttacking))
                     isLeftHandAttacking = !isLeftHandAttacking;
+                isFollowingTarget = false;
             }
         }
 
-        protected void UpdateWASDPendingSkill(BaseSkill skill, short skillLevel)
+        protected void UpdateQueuedSkill()
         {
+            if (PlayerCharacterEntity.IsHideOrDead)
+            {
+                ClearQueueUsingSkill();
+                return;
+            }
+            if (queueUsingSkill.skill == null || queueUsingSkill.level <= 0)
+                return;
+            if (PlayerCharacterEntity.IsPlayingActionAnimation())
+                return;
             destination = null;
+            BaseSkill skill = queueUsingSkill.skill;
+            short skillLevel = queueUsingSkill.level;
+            Vector3? aimPosition = queueUsingSkill.aimPosition;
             BaseCharacterEntity targetEntity;
+            bool wasdLockAttackTarget = this.wasdLockAttackTarget || controllerMode == PlayerCharacterControllerMode.PointClick;
+
+            if (skill.HasCustomAimControls())
+            {
+                // Target not required, use skill immediately
+                TurnCharacterToPosition(aimPosition.Value);
+                RequestUsePendingSkill();
+                isFollowingTarget = false;
+                return;
+            }
 
             if (skill.IsAttack())
             {
                 if (TryGetSelectedTargetAsAttackingEntity(out targetEntity))
-                    SetTarget(targetEntity, TargetActionType.Attack, false);
+                    SetTarget(targetEntity, TargetActionType.UseSkill, false);
 
-                if (IsLockTarget() && !TryGetAttackingCharacter(out targetEntity))
+                if (wasdLockAttackTarget)
                 {
-                    BaseCharacterEntity nearestTarget = PlayerCharacterEntity
-                        .FindNearestAliveCharacter<BaseCharacterEntity>(
-                        skill.GetCastDistance(PlayerCharacterEntity, skillLevel, isLeftHandAttacking) + lockAttackTargetDistance,
-                        false,
-                        true,
-                        false);
-                    if (nearestTarget != null)
+                    if (!TryGetAttackingEntity(out targetEntity) || targetEntity.IsHideOrDead)
+                    {
+                        targetEntity = PlayerCharacterEntity
+                            .FindNearestAliveCharacter<BaseCharacterEntity>(
+                            Mathf.Max(skill.GetCastDistance(PlayerCharacterEntity, skillLevel, isLeftHandAttacking), lockAttackTargetDistance),
+                            false,
+                            true,
+                            false);
+                    }
+                    if (targetEntity != null && !targetEntity.IsHideOrDead)
                     {
                         // Set target, then use skill later when moved nearby target
-                        SetTarget(nearestTarget, TargetActionType.Attack, false);
+                        SelectedEntity = targetEntity;
+                        SetTarget(targetEntity, TargetActionType.UseSkill, false);
+                        isFollowingTarget = true;
                     }
                     else
                     {
-                        // No nearby target, so use skill immediately
+                        // No target, so use skill immediately
                         RequestUsePendingSkill();
+                        isFollowingTarget = false;
                     }
                 }
-                else if (!IsLockTarget())
+                else if (!wasdLockAttackTarget)
                 {
+                    // Find nearest target and set selected target to show character hp/mp UIs
+                    SelectedEntity = PlayerCharacterEntity
+                        .FindNearestAliveCharacter<BaseCharacterEntity>(
+                        skill.GetCastDistance(PlayerCharacterEntity, skillLevel, isLeftHandAttacking),
+                        false,
+                        true,
+                        false);
+                    if (SelectedEntity != null)
+                    {
+                        // Look at target and attack
+                        TurnCharacterToEntity(SelectedEntity);
+                    }
                     // Not lock target, so not finding target and use skill immediately
                     RequestUsePendingSkill();
+                    isFollowingTarget = false;
                 }
             }
             else
@@ -518,89 +567,98 @@ namespace MultiplayerARPG
                 // Not attack skill, so use skill immediately
                 if (skill.RequiredTarget())
                 {
-                    if (IsLockTarget())
+                    if (wasdLockAttackTarget)
                     {
-                        // Let's update follow target do it
-                        return;
+                        // Set target, then use skill later when moved nearby target
+                        if (SelectedEntity != null && SelectedEntity is BaseCharacterEntity)
+                        {
+                            SetTarget(SelectedEntity, TargetActionType.UseSkill, false);
+                            isFollowingTarget = true;
+                        }
+                        else
+                        {
+                            ClearQueueUsingSkill();
+                            isFollowingTarget = false;
+                        }
                     }
-                    // TODO: Check is target nearby or not
-                    ClearQueueUsingSkill();
+                    else
+                    {
+                        // Try apply skill to selected entity immediately, it will fail if selected entity is far from the character
+                        if (SelectedEntity != null && SelectedEntity is BaseCharacterEntity)
+                        {
+                            if (SelectedEntity != PlayerCharacterEntity)
+                            {
+                                // Look at target and use skill
+                                TurnCharacterToEntity(SelectedEntity);
+                            }
+                            RequestUsePendingSkill();
+                            isFollowingTarget = false;
+                        }
+                        else
+                        {
+                            ClearQueueUsingSkill();
+                            isFollowingTarget = false;
+                        }
+                    }
                 }
                 else
                 {
                     // Target not required, use skill immediately
                     RequestUsePendingSkill();
+                    isFollowingTarget = false;
                 }
             }
         }
 
         public void UpdateFollowTarget()
         {
-            if (!IsLockTarget())
+            if (!isFollowingTarget)
                 return;
 
-            if (TryGetLootableCharacter(out targetCharacter))
+            if (TryGetLootableCharacter(out targetCharacterEntity))
             {
-                if (Vector3.Distance(MovementTransform.position, targetCharacter.CacheTransform.position) <= CurrentGameInstance.conversationDistance &&
-                    !InputManager.useMobileInputOnNonMobile && !Application.isMobilePlatform)
+                DoActionOrMoveToEntity(targetCharacterEntity, CurrentGameInstance.conversationDistance, () =>
                 {
-                    (CacheUISceneGameplay as UISceneGameplay).OnShowLootBag(targetMonster);
-                    return;
-                }
+                    if (!InputManager.useMobileInputOnNonMobile && !Application.isMobilePlatform)
+                        (CacheUISceneGameplay as UISceneGameplay).OnShowLootBag(targetCharacterEntity);
+                });
             }
-            else if (TryGetAttackingCharacter(out targetCharacter))
+            else if (TryGetAttackingEntity(out targetDamageable))
             {
-                if (targetCharacter.GetCaches().IsHide || targetCharacter.IsDead())
+                if (EntityIsHideOrDead(targetDamageable))
                 {
                     ClearQueueUsingSkill();
                     PlayerCharacterEntity.StopMove();
                     ClearTarget();
                     return;
                 }
-
-                if (queueUsingSkill.skill != null && !queueUsingSkill.skill.IsAttack())
-                {
-                    // Try use non-attack skill
-                    PlayerCharacterEntity.StopMove();
-                    RequestUsePendingSkill();
-                    return;
-                }
-
-                // Find attack distance and fov, from weapon or skill
                 float attackDistance = 0f;
                 float attackFov = 0f;
                 GetAttackDistanceAndFov(isLeftHandAttacking, out attackDistance, out attackFov);
-                AttackOrMoveToEntity(targetCharacter, attackDistance, CurrentGameInstance.characterLayer.Mask, () =>
-                {
-                    // If has queue using skill, attack by the skill
-                    if (queueUsingSkill.skill != null)
-                    {
-                        RequestUsePendingSkill();
-                        return;
-                    }
-                    else
-                    {
-                        RequestAttack();
-                        return;
-                    }
-                });
+                AttackOrMoveToEntity(targetDamageable, attackDistance, CurrentGameInstance.characterLayer.Mask);
             }
-            else if (TryGetUsingSkillCharacter(out targetCharacter))
+            else if (TryGetUsingSkillEntity(out targetDamageable))
             {
-                // Find attack distance and fov, from weapon or skill
+                if (queueUsingSkill.skill.IsAttack() && EntityIsHideOrDead(targetDamageable))
+                {
+                    ClearQueueUsingSkill();
+                    PlayerCharacterEntity.StopMove();
+                    ClearTarget();
+                    return;
+                }
                 float castDistance = 0f;
                 float castFov = 0f;
                 GetUseSkillDistanceAndFov(out castDistance, out castFov);
-                UseSkillOrMoveToEntity(targetCharacter, castDistance);
+                UseSkillOrMoveToEntity(targetDamageable, castDistance);
             }
-            else if (PlayerCharacterEntity.TryGetTargetEntity(out targetCharacter))
+            else if (TryGetDoActionEntity(out targetPlayer))
             {
-                DoActionOrMoveToEntity(targetCharacter, CurrentGameInstance.conversationDistance, () =>
+                DoActionOrMoveToEntity(targetPlayer, CurrentGameInstance.conversationDistance, () =>
                 {
                     // TODO: Do something
                 });
             }
-            else if (PlayerCharacterEntity.TryGetTargetEntity(out targetNpc))
+            else if (TryGetDoActionEntity(out targetNpc))
             {
                 DoActionOrMoveToEntity(targetNpc, CurrentGameInstance.conversationDistance, () =>
                 {
@@ -611,7 +669,7 @@ namespace MultiplayerARPG
                     }
                 });
             }
-            else if (PlayerCharacterEntity.TryGetTargetEntity(out targetItemDrop))
+            else if (TryGetDoActionEntity(out targetItemDrop))
             {
                 DoActionOrMoveToEntity(targetItemDrop, CurrentGameInstance.pickUpItemDistance, () =>
                 {
@@ -619,41 +677,21 @@ namespace MultiplayerARPG
                     ClearTarget();
                 });
             }
-            else if (PlayerCharacterEntity.TryGetTargetEntity(out targetBuilding))
+            else if (TryGetDoActionEntity(out targetBuilding, TargetActionType.Activate))
             {
                 DoActionOrMoveToEntity(targetBuilding, CurrentGameInstance.conversationDistance, () =>
                 {
-                    if (!IsEditingBuilding)
-                    {
-                        ActivateBuilding(targetBuilding);
-                        ClearTarget();
-                    }
-                    else
-                    {
-                        ShowCurrentBuildingDialog();
-                    }
+                    ActivateBuilding(targetBuilding);
                 });
             }
-            else if (PlayerCharacterEntity.TryGetTargetEntity(out targetHarvestable))
+            else if (TryGetDoActionEntity(out targetBuilding, TargetActionType.ViewOptions))
             {
-                if (targetHarvestable.IsDead())
+                DoActionOrMoveToEntity(targetBuilding, CurrentGameInstance.conversationDistance, () =>
                 {
-                    ClearQueueUsingSkill();
-                    PlayerCharacterEntity.StopMove();
-                    ClearTarget();
-                    return;
-                }
-
-                // Find attack distance and fov, from weapon
-                float attackDistance = 0f;
-                float attackFov = 0f;
-                GetAttackDistanceAndFov(isLeftHandAttacking, out attackDistance, out attackFov);
-                AttackOrMoveToEntity(targetHarvestable, attackDistance, CurrentGameInstance.harvestableLayer.Mask, () =>
-                {
-                    RequestAttack();
+                    ShowCurrentBuildingDialog();
                 });
             }
-            else if (PlayerCharacterEntity.TryGetTargetEntity(out targetVehicle))
+            else if (TryGetDoActionEntity(out targetVehicle))
             {
                 DoActionOrMoveToEntity(targetVehicle, CurrentGameInstance.conversationDistance, () =>
                 {
@@ -665,80 +703,105 @@ namespace MultiplayerARPG
 
         protected void DoActionOrMoveToEntity(BaseGameEntity entity, float distance, System.Action action)
         {
-            if (Vector3.Distance(MovementTransform.position, entity.CacheTransform.position) <= distance)
+            Vector3 measuringPosition = MovementTransform.position;
+            Vector3 targetPosition = entity.CacheTransform.position;
+            if (Vector3.Distance(measuringPosition, targetPosition) <= distance)
             {
                 // Stop movement to do action
                 PlayerCharacterEntity.StopMove();
                 // Do action
                 action.Invoke();
+                // This function may be used by extending classes
+                OnDoActionOnEntity();
             }
             else
             {
                 // Move to target entity
-                UpdateTargetEntityPosition(entity, distance);
+                UpdateTargetEntityPosition(measuringPosition, targetPosition, distance);
             }
         }
 
-        protected void AttackOrMoveToEntity(IDamageableEntity entity, float distance, int layerMask, System.Action action)
+        protected virtual void OnDoActionOnEntity()
         {
-            if (IsTargetInAttackDistance(entity, distance, layerMask))
+
+        }
+
+        protected void AttackOrMoveToEntity(IDamageableEntity entity, float distance, int layerMask)
+        {
+            Transform damageTransform = PlayerCharacterEntity.GetWeaponDamageInfo(ref isLeftHandAttacking).GetDamageTransform(PlayerCharacterEntity, isLeftHandAttacking);
+            Vector3 measuringPosition = damageTransform.position;
+            Vector3 targetPosition = entity.OpponentAimTransform.position;
+            if (Vector3.Distance(measuringPosition, targetPosition) <= distance)
             {
                 // Stop movement to attack
                 PlayerCharacterEntity.StopMove();
                 // Turn character to attacking target
                 TurnCharacterToEntity(entity.Entity);
                 // Do action
-                action.Invoke();
+                RequestAttack();
+                // This function may be used by extending classes
+                OnAttackOnEntity();
             }
             else
             {
                 // Move to target entity
-                UpdateTargetEntityPosition(entity.Entity, distance);
+                UpdateTargetEntityPosition(measuringPosition, targetPosition, distance);
             }
+        }
+
+        protected virtual void OnAttackOnEntity()
+        {
+
         }
 
         protected void UseSkillOrMoveToEntity(IDamageableEntity entity, float distance)
         {
-            if (entity.GetObjectId() == PlayerCharacterEntity.GetObjectId() ||
-                Vector3.Distance(MovementTransform.position, entity.GetTransform().position) <= distance)
+            if (queueUsingSkill.skill != null)
             {
-                // Stop movement to use skill
-                PlayerCharacterEntity.StopMove();
-                // Turn character to attacking target
-                TurnCharacterToEntity(entity.Entity);
-                // Use the skill
-                if (queueUsingSkill.skill != null)
+                Transform applyTransform = queueUsingSkill.skill.GetApplyTransform(PlayerCharacterEntity, false);
+                Vector3 measuringPosition = applyTransform.position;
+                Vector3 targetPosition = entity.OpponentAimTransform.position;
+                if (entity.GetObjectId() == PlayerCharacterEntity.GetObjectId() /* Applying skill to user? */ ||
+                    Vector3.Distance(measuringPosition, targetPosition) <= distance)
                 {
-                    // Can use skill
+                    // Set next frame target action type
+                    targetActionType = queueUsingSkill.skill.IsAttack() ? TargetActionType.Attack : TargetActionType.Activate;
+                    // Stop movement to use skill
+                    PlayerCharacterEntity.StopMove();
+                    // Turn character to attacking target
+                    TurnCharacterToEntity(entity.Entity);
+                    // Use the skill
                     RequestUsePendingSkill();
-                    targetActionType = TargetActionType.Undefined;
-                    return;
+                    // This function may be used by extending classes
+                    OnUseSkillOnEntity();
                 }
                 else
                 {
-                    // Can't use skill
-                    targetActionType = TargetActionType.Undefined;
-                    ClearQueueUsingSkill();
-                    return;
+                    // Move to target entity
+                    UpdateTargetEntityPosition(measuringPosition, targetPosition, distance);
                 }
             }
             else
             {
-                // Move to target entity
-                UpdateTargetEntityPosition(entity.Entity, distance);
+                // Can't use skill
+                targetActionType = TargetActionType.Activate;
+                ClearQueueUsingSkill();
+                return;
             }
         }
 
-        protected void UpdateTargetEntityPosition(BaseGameEntity entity, float distance)
+        protected virtual void OnUseSkillOnEntity()
         {
-            if (entity == null)
-                return;
 
+        }
+
+        protected void UpdateTargetEntityPosition(Vector3 measuringPosition, Vector3 targetPosition, float distance)
+        {
             if (PlayerCharacterEntity.IsPlayingActionAnimation())
                 return;
-
-            Vector3 direction = (entity.CacheTransform.position - MovementTransform.position).normalized;
-            Vector3 position = entity.CacheTransform.position - (direction * (distance - StoppingDistance));
+            
+            Vector3 direction = (targetPosition - measuringPosition).normalized;
+            Vector3 position = targetPosition - (direction * (distance - StoppingDistance));
             if (Vector3.Distance(previousPointClickPosition, position) > 0.01f)
             {
                 PlayerCharacterEntity.PointClickMovement(position);
@@ -750,26 +813,26 @@ namespace MultiplayerARPG
         {
             if (entity == null)
                 return;
-            Vector3 lookAtDirection = (entity.CacheTransform.position - MovementTransform.position).normalized;
+            TurnCharacterToPosition(entity.CacheTransform.position);
+        }
+
+        protected void TurnCharacterToPosition(Vector3 position)
+        {
+            Vector3 lookAtDirection = (position - MovementTransform.position).normalized;
             if (lookAtDirection.sqrMagnitude > 0)
                 PlayerCharacterEntity.SetLookRotation(Quaternion.LookRotation(lookAtDirection));
         }
 
-        public override void UseHotkey(int hotkeyIndex, Vector3? aimPosition)
+        public override void UseHotkey(HotkeyType type, string relateId, Vector3? aimPosition)
         {
-            if (hotkeyIndex < 0 || hotkeyIndex >= PlayerCharacterEntity.Hotkeys.Count)
-                return;
-
             ClearQueueUsingSkill();
-
-            CharacterHotkey hotkey = PlayerCharacterEntity.Hotkeys[hotkeyIndex];
-            switch (hotkey.type)
+            switch (type)
             {
                 case HotkeyType.Skill:
-                    UseSkill(hotkey.relateId, aimPosition);
+                    UseSkill(relateId, aimPosition);
                     break;
                 case HotkeyType.Item:
-                    UseItem(hotkey.relateId, aimPosition);
+                    UseItem(relateId, aimPosition);
                     break;
             }
         }
@@ -778,86 +841,11 @@ namespace MultiplayerARPG
         {
             BaseSkill skill = null;
             short skillLevel = 0;
-
             // Avoid empty data
             if (!GameInstance.Skills.TryGetValue(BaseGameData.MakeDataId(id), out skill) || skill == null ||
                 !PlayerCharacterEntity.GetCaches().Skills.TryGetValue(skill, out skillLevel))
                 return;
-
-            // Set aim position to use immediately (don't add to queue)
-            UseSkill(
-                skill,
-                skillLevel,
-                () => SetQueueUsingSkill(aimPosition, skill, skillLevel),
-                () =>
-                {
-                    if (!aimPosition.HasValue)
-                        PlayerCharacterEntity.RequestUseSkill(skill.DataId, isLeftHandAttacking);
-                    else
-                        PlayerCharacterEntity.RequestUseSkill(skill.DataId, isLeftHandAttacking, aimPosition.Value);
-                });
-        }
-
-        protected void UseSkill(
-            BaseSkill skill,
-            short skillLevel,
-            System.Action setQueueFunction,
-            System.Action useFunction)
-        {
-            BaseCharacterEntity attackingCharacter;
-            if (TryGetAttackingCharacter(out attackingCharacter))
-            {
-                // If attacking any character, will use skill later
-                setQueueFunction.Invoke();
-            }
-            else
-            {
-                // If not attacking any character, use skill immediately
-                if (skill.IsAttack())
-                {
-                    // Default damage type attacks
-                    if (IsLockTarget() && !skill.HasCustomAimControls())
-                    {
-                        // If attacking any character, will use skill later
-                        setQueueFunction.Invoke();
-                        if (SelectedEntity == null && !(SelectedEntity is BaseCharacterEntity))
-                        {
-                            // Attacking nearest target
-                            BaseCharacterEntity nearestTarget = PlayerCharacterEntity
-                                .FindNearestAliveCharacter<BaseCharacterEntity>(
-                                skill.GetCastDistance(PlayerCharacterEntity, skillLevel, isLeftHandAttacking) + lockAttackTargetDistance,
-                                false,
-                                true,
-                                false);
-                            if (nearestTarget != null)
-                                SetTarget(nearestTarget, TargetActionType.Attack);
-                        }
-                    }
-                    else
-                    {
-                        // Not lock target, use it immediately
-                        destination = null;
-                        PlayerCharacterEntity.StopMove();
-                        useFunction.Invoke();
-                    }
-                }
-                else
-                {
-                    // This is not attack skill, use it immediately
-                    destination = null;
-                    PlayerCharacterEntity.StopMove();
-                    if (skill.RequiredTarget())
-                    {
-                        setQueueFunction.Invoke();
-                        if (IsLockTarget())
-                            SetTarget(SelectedEntity, TargetActionType.UseSkill, false);
-                    }
-                    else
-                    {
-                        useFunction.Invoke();
-                    }
-                }
-            }
+            SetQueueUsingSkill(aimPosition, skill, skillLevel);
         }
 
         protected void UseItem(string id, Vector3? aimPosition)
@@ -893,17 +881,7 @@ namespace MultiplayerARPG
                 // Set aim position to use immediately (don't add to queue)
                 BaseSkill skill = (item as ISkillItem).UsingSkill;
                 short skillLevel = (item as ISkillItem).UsingSkillLevel;
-                UseSkill(
-                    skill,
-                    skillLevel,
-                    () => SetQueueUsingSkill(aimPosition, skill, skillLevel, (short)itemIndex),
-                    () =>
-                    {
-                        if (!aimPosition.HasValue)
-                            PlayerCharacterEntity.RequestUseSkillItem((short)itemIndex, isLeftHandAttacking);
-                        else
-                            PlayerCharacterEntity.RequestUseSkillItem((short)itemIndex, isLeftHandAttacking, aimPosition.Value);
-                    });
+                SetQueueUsingSkill(aimPosition, skill, skillLevel, (short)itemIndex);
             }
             else if (item.IsBuilding())
             {

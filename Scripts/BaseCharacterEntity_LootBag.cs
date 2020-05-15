@@ -128,24 +128,24 @@ namespace MultiplayerARPG
         /// <param name="nonEquipIndex">index of the inventory slot to place the item</param>
         protected virtual void NetFuncPickupLootBagItem(uint objectId, short lootBagIndex, short nonEquipIndex)
         {
-            BaseMonsterCharacterEntity monsterCharacterEntity = GetMonsterCharacterEntity(objectId);
+            BaseCharacterEntity characterEntity = GetCharacterEntity(objectId);
 
-            if (monsterCharacterEntity == null || monsterCharacterEntity.LootBag.Count == 0)
+            if (characterEntity == null || characterEntity.LootBag.Count == 0)
                 return;
 
-            if (lootBagIndex > monsterCharacterEntity.LootBag.Count - 1)
+            if (lootBagIndex > characterEntity.LootBag.Count - 1)
                 return;
 
-            CharacterItem lootItem = monsterCharacterEntity.LootBag[lootBagIndex].Clone();
+            CharacterItem lootItem = characterEntity.LootBag[lootBagIndex].Clone();
 
             if (nonEquipIndex < 0)
             {
                 if (lootItem.IsEmptySlot())
-                    monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
+                    characterEntity.RemoveLootItemAt(lootBagIndex);
                 if (!this.IncreasingItemsWillOverwhelming(lootItem.dataId, lootItem.amount) && this.IncreaseItems(lootItem))
                 {
                     this.FillEmptySlots();
-                    monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
+                    characterEntity.RemoveLootItemAt(lootBagIndex);
                 }
             }
             else
@@ -158,7 +158,7 @@ namespace MultiplayerARPG
                     if (toItem.amount + lootItem.amount <= maxStack)
                     {
                         toItem.amount += lootItem.amount;
-                        monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
+                        characterEntity.RemoveLootItemAt(lootBagIndex);
                         NonEquipItems[nonEquipIndex] = toItem;
                         this.FillEmptySlots();
                     }
@@ -167,16 +167,16 @@ namespace MultiplayerARPG
                         short remains = (short)(toItem.amount + lootItem.amount - maxStack);
                         toItem.amount = maxStack;
                         lootItem.amount = remains;
-                        monsterCharacterEntity.LootBag[lootBagIndex] = lootItem;
+                        characterEntity.LootBag[lootBagIndex] = lootItem;
                         NonEquipItems[nonEquipIndex] = toItem;
                     }
                 }
                 else
                 {
                     if (toItem.IsEmptySlot())
-                        monsterCharacterEntity.RemoveLootItemAt(lootBagIndex);
+                        characterEntity.RemoveLootItemAt(lootBagIndex);
                     else
-                        monsterCharacterEntity.LootBag[lootBagIndex] = toItem;
+                        characterEntity.LootBag[lootBagIndex] = toItem;
 
                     NonEquipItems[nonEquipIndex] = lootItem;
                 }
@@ -189,16 +189,16 @@ namespace MultiplayerARPG
         /// </summary>
         protected virtual void NetFuncPickupAllLootBagItems(uint objectId)
         {
-            BaseMonsterCharacterEntity monsterCharacterEntity = GetMonsterCharacterEntity(objectId);
+            BaseCharacterEntity characterEntity = GetCharacterEntity(objectId);
 
-            if (monsterCharacterEntity == null || monsterCharacterEntity.LootBag.Count == 0)
+            if (characterEntity == null || characterEntity.LootBag.Count == 0)
                 return;
 
             Stack<int> itemsToRemove = new Stack<int>();
 
-            for (int i = 0; i < monsterCharacterEntity.LootBag.Count; i++)
+            for (int i = 0; i < characterEntity.LootBag.Count; i++)
             {
-                CharacterItem lootItem = monsterCharacterEntity.LootBag[i].Clone();
+                CharacterItem lootItem = characterEntity.LootBag[i].Clone();
 
                 if (lootItem.IsEmptySlot())
                 {
@@ -213,30 +213,30 @@ namespace MultiplayerARPG
             }
 
             foreach (int itemIndex in itemsToRemove)
-                monsterCharacterEntity.RemoveLootItemAt(itemIndex);
+                characterEntity.RemoveLootItemAt(itemIndex);
         }
 
         /// <summary>
-        /// Returns the BaseMonsterCharacterEntity for the provided object ID.
+        /// Returns the BaseCharacterEntity for the provided object ID.
         /// </summary>
-        /// <param name="objectId">Object ID of the monster entity to return</param>
-        /// <returns>BaseMonsterCharacterEntity</returns>
-        private BaseMonsterCharacterEntity GetMonsterCharacterEntity(uint objectId)
+        /// <param name="objectId">Object ID of the character entity to return</param>
+        /// <returns>BaseCharacterEntity</returns>
+        private BaseCharacterEntity GetCharacterEntity(uint objectId)
         {
-            BaseMonsterCharacterEntity monsterCharacterEntity = GetTargetEntity() as BaseMonsterCharacterEntity;
-            if (monsterCharacterEntity == null || monsterCharacterEntity.ObjectId != objectId)
+            BaseCharacterEntity characterEntity = GetTargetEntity() as BaseCharacterEntity;
+            if (characterEntity == null || characterEntity.ObjectId != objectId)
             {
-                var monsterCharacters = FindObjectsOfType(typeof(BaseMonsterCharacterEntity));
-                foreach (BaseMonsterCharacterEntity monsterCharacter in monsterCharacters)
+                var characterEntities = FindObjectsOfType(typeof(BaseCharacterEntity));
+                foreach (BaseCharacterEntity ce in characterEntities)
                 {
-                    if (monsterCharacter.ObjectId == objectId)
+                    if (ce.ObjectId == objectId)
                     {
-                        monsterCharacterEntity = monsterCharacter;
+                        characterEntity = ce;
                         break;
                     }
                 }
             }
-            return monsterCharacterEntity;
+            return characterEntity;
         }
     }
 }

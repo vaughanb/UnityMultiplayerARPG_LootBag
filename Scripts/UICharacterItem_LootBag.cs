@@ -107,11 +107,11 @@ namespace MultiplayerARPG
         /// </summary>
         public void OnClickLootItem()
         {
-            BaseMonsterCharacterEntity monsterCharacterEntity = OwningCharacter.GetTargetEntity() as BaseMonsterCharacterEntity;
-            if (monsterCharacterEntity == null)
+            BaseCharacterEntity characterEntity = OwningCharacter.GetTargetEntity() as BaseCharacterEntity;
+            if (characterEntity == null)
                 return;
 
-            OwningCharacter.RequestPickupLootBagItem(monsterCharacterEntity.Identity.ObjectId, (short)IndexOfData, -1);
+            OwningCharacter.RequestPickupLootBagItem(characterEntity.Identity.ObjectId, (short)IndexOfData, -1);
         }
     }
 }

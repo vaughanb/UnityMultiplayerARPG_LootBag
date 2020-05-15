@@ -119,7 +119,7 @@ namespace MultiplayerARPG
             if (Level <= 0)
                 Level = MonsterDatabase.defaultLevel;
 
-            CharacterStats stats = this.GetStats();
+            CharacterStats stats = this.GetCaches().Stats;
             CurrentHp = (int)stats.hp;
             CurrentMp = (int)stats.mp;
             CurrentStamina = (int)stats.stamina;
@@ -311,7 +311,7 @@ namespace MultiplayerARPG
             base.ReceivedDamage(attacker, damageAmountType, damage);
         }
 
-        public override sealed void Killed(IGameEntity lastAttacker)
+        public override void Killed(IGameEntity lastAttacker)
         {
             base.Killed(lastAttacker);
 

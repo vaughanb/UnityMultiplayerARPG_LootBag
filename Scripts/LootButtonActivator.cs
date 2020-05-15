@@ -35,7 +35,7 @@ namespace MultiplayerARPG
             {
                 if (shooterController.SelectedEntity is BaseCharacterEntity)
                 {
-                    BaseCharacterEntity character = shooterController.SelectedEntity as BaseMonsterCharacterEntity;
+                    BaseCharacterEntity character = shooterController.SelectedEntity as BaseCharacterEntity;
                     canActivate = character.IsDead() && character.useLootBag && character.LootBag.Count > 0;
                 }
             }

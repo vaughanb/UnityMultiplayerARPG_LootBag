@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace MultiplayerARPG
 {
-    public sealed partial class MonsterCharacter : BaseCharacter
+    public partial class MonsterCharacter : BaseCharacter
     {
         /// <summary>
         /// Returns a random collection of item drops.
