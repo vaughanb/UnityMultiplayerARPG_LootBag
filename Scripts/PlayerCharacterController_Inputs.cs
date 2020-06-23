@@ -6,6 +6,8 @@ namespace MultiplayerARPG
 {
     public partial class PlayerCharacterController
     {
+        public const float MIN_START_MOVE_DISTANCE = 0.01f;
+
         public virtual void UpdateInput()
         {
             bool isFocusInputField = GenericUtils.IsFocusInputField();
@@ -215,7 +217,7 @@ namespace MultiplayerARPG
                 int tempCount = FindClickObjects(out tempVector3);
                 for (int tempCounter = tempCount - 1; tempCounter >= 0; --tempCounter)
                 {
-                    tempTransform = GetRaycastTransform(tempCounter);
+                    tempTransform = physicFunctions.GetRaycastTransform(tempCounter);
                     // When holding on target, or already enter edit building mode
                     if (isMouseHoldAndNotDrag)
                     {
@@ -309,11 +311,11 @@ namespace MultiplayerARPG
                             tempHasMapPosition = false;
                             break;
                         }
-                        else if (!GetRaycastIsTrigger(tempCounter))
+                        else if (!physicFunctions.GetRaycastIsTrigger(tempCounter))
                         {
                             // Set clicked map position, it will be used if no activating entity found
                             tempHasMapPosition = true;
-                            tempMapPosition = GetRaycastPoint(tempCounter);
+                            tempMapPosition = physicFunctions.GetRaycastPoint(tempCounter);
                             if (tempMapPosition.y > tempHighestY)
                                 tempHighestY = tempMapPosition.y;
                         }
@@ -346,12 +348,31 @@ namespace MultiplayerARPG
                     HideNpcDialog();
                     ClearQueueUsingSkill();
                     isFollowingTarget = false;
-                    if (!PlayerCharacterEntity.IsPlayingActionAnimation())
+                    if (PlayerCharacterEntity.IsPlayingActionAnimation())
                     {
+                        if (pointClickInterruptCastingSkill)
+                            PlayerCharacterEntity.RequestSkillCastingInterrupt();
+                    }
+                    else
+                    {
+                        OnPointClickOnGround(targetPosition.Value);
                         destination = targetPosition.Value;
                         PlayerCharacterEntity.PointClickMovement(targetPosition.Value);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// When point click on ground, move target to the position
+        /// </summary>
+        /// <param name="targetPosition"></param>
+        protected virtual void OnPointClickOnGround(Vector3 targetPosition)
+        {
+            if (Vector3.Distance(MovementTransform.position, targetPosition) > MIN_START_MOVE_DISTANCE)
+            {
+                destination = targetPosition;
+                PlayerCharacterEntity.PointClickMovement(targetPosition);
             }
         }
 
@@ -502,6 +523,7 @@ namespace MultiplayerARPG
             short skillLevel = queueUsingSkill.level;
             Vector3? aimPosition = queueUsingSkill.aimPosition;
             BaseCharacterEntity targetEntity;
+            // Point click mode always lock on target
             bool wasdLockAttackTarget = this.wasdLockAttackTarget || controllerMode == PlayerCharacterControllerMode.PointClick;
 
             if (skill.HasCustomAimControls())
@@ -520,8 +542,9 @@ namespace MultiplayerARPG
 
                 if (wasdLockAttackTarget)
                 {
-                    if (!TryGetAttackingEntity(out targetEntity) || targetEntity.IsHideOrDead)
+                    if (!TryGetSelectedTargetAsAttackingEntity(out targetEntity) || targetEntity.IsHideOrDead)
                     {
+                        // Try find nearby enemy if no selected target or selected taget is not enemy or target is hide or dead
                         targetEntity = PlayerCharacterEntity
                             .FindNearestAliveCharacter<BaseCharacterEntity>(
                             Mathf.Max(skill.GetCastDistance(PlayerCharacterEntity, skillLevel, isLeftHandAttacking), lockAttackTargetDistance),
@@ -543,7 +566,7 @@ namespace MultiplayerARPG
                         isFollowingTarget = false;
                     }
                 }
-                else if (!wasdLockAttackTarget)
+                else
                 {
                     // Find nearest target and set selected target to show character hp/mp UIs
                     SelectedEntity = PlayerCharacterEntity
@@ -648,7 +671,7 @@ namespace MultiplayerARPG
                 }
                 float castDistance = 0f;
                 float castFov = 0f;
-                GetUseSkillDistanceAndFov(out castDistance, out castFov);
+                GetUseSkillDistanceAndFov(isLeftHandAttacking, out castDistance, out castFov);
                 UseSkillOrMoveToEntity(targetDamageable, castDistance);
             }
             else if (TryGetDoActionEntity(out targetPlayer))
@@ -701,11 +724,20 @@ namespace MultiplayerARPG
             }
         }
 
-        protected void DoActionOrMoveToEntity(BaseGameEntity entity, float distance, System.Action action)
+        protected virtual bool OverlappedEntity<T>(T entity, Vector3 measuringPosition, Vector3 targetPosition, float distance)
+            where T : BaseGameEntity
+        {
+            if (Vector3.Distance(measuringPosition, targetPosition) <= distance)
+                return true;
+            // Target is far from controlling entity, try overlap the entity
+            return physicFunctions.OverlapEntity(entity, measuringPosition, distance, CurrentGameInstance.GetTargetLayerMask());
+        }
+
+        protected virtual void DoActionOrMoveToEntity(BaseGameEntity entity, float distance, System.Action action)
         {
             Vector3 measuringPosition = MovementTransform.position;
             Vector3 targetPosition = entity.CacheTransform.position;
-            if (Vector3.Distance(measuringPosition, targetPosition) <= distance)
+            if (OverlappedEntity(entity, measuringPosition, targetPosition, distance))
             {
                 // Stop movement to do action
                 PlayerCharacterEntity.StopMove();
@@ -726,12 +758,12 @@ namespace MultiplayerARPG
 
         }
 
-        protected void AttackOrMoveToEntity(IDamageableEntity entity, float distance, int layerMask)
+        protected virtual void AttackOrMoveToEntity(IDamageableEntity entity, float distance, int layerMask)
         {
             Transform damageTransform = PlayerCharacterEntity.GetWeaponDamageInfo(ref isLeftHandAttacking).GetDamageTransform(PlayerCharacterEntity, isLeftHandAttacking);
             Vector3 measuringPosition = damageTransform.position;
             Vector3 targetPosition = entity.OpponentAimTransform.position;
-            if (Vector3.Distance(measuringPosition, targetPosition) <= distance)
+            if (OverlappedEntity(entity.Entity, measuringPosition, targetPosition, distance))
             {
                 // Stop movement to attack
                 PlayerCharacterEntity.StopMove();
@@ -754,15 +786,15 @@ namespace MultiplayerARPG
 
         }
 
-        protected void UseSkillOrMoveToEntity(IDamageableEntity entity, float distance)
+        protected virtual void UseSkillOrMoveToEntity(IDamageableEntity entity, float distance)
         {
             if (queueUsingSkill.skill != null)
             {
-                Transform applyTransform = queueUsingSkill.skill.GetApplyTransform(PlayerCharacterEntity, false);
+                Transform applyTransform = queueUsingSkill.skill.GetApplyTransform(PlayerCharacterEntity, isLeftHandAttacking);
                 Vector3 measuringPosition = applyTransform.position;
                 Vector3 targetPosition = entity.OpponentAimTransform.position;
                 if (entity.GetObjectId() == PlayerCharacterEntity.GetObjectId() /* Applying skill to user? */ ||
-                    Vector3.Distance(measuringPosition, targetPosition) <= distance)
+                    OverlappedEntity(entity.Entity, measuringPosition, targetPosition, distance))
                 {
                     // Set next frame target action type
                     targetActionType = queueUsingSkill.skill.IsAttack() ? TargetActionType.Attack : TargetActionType.Activate;
@@ -795,14 +827,15 @@ namespace MultiplayerARPG
 
         }
 
-        protected void UpdateTargetEntityPosition(Vector3 measuringPosition, Vector3 targetPosition, float distance)
+        protected virtual void UpdateTargetEntityPosition(Vector3 measuringPosition, Vector3 targetPosition, float distance)
         {
             if (PlayerCharacterEntity.IsPlayingActionAnimation())
                 return;
             
             Vector3 direction = (targetPosition - measuringPosition).normalized;
             Vector3 position = targetPosition - (direction * (distance - StoppingDistance));
-            if (Vector3.Distance(previousPointClickPosition, position) > 0.01f)
+            if (Vector3.Distance(MovementTransform.position, position) > MIN_START_MOVE_DISTANCE &&
+                Vector3.Distance(previousPointClickPosition, position) > MIN_START_MOVE_DISTANCE)
             {
                 PlayerCharacterEntity.PointClickMovement(position);
                 previousPointClickPosition = position;

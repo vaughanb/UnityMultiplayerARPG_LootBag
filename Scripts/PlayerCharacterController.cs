@@ -34,10 +34,13 @@ namespace MultiplayerARPG
         public float wasdClearTargetDistance = 15f;
         [Tooltip("Set this to TRUE to move to target immediately when clicked on target, if this is FALSE it will not move to target immediately")]
         public bool pointClickSetTargetImmediately;
+        [Tooltip("Set this to TRUE to interrupt casting skill when click on ground to move")]
+        public bool pointClickInterruptCastingSkill;
         public GameObject targetObjectPrefab;
 
         [Header("Building Settings")]
         public bool buildGridSnap;
+        public Vector3 buildGridOffsets = Vector3.zero;
         public float buildGridSize = 4f;
         public bool buildRotationSnap;
         public float buildRotateAngle = 45f;
@@ -52,6 +55,8 @@ namespace MultiplayerARPG
         public GameObject CacheTargetObject { get; protected set; }
         protected Vector3? targetPosition;
         protected TargetActionType targetActionType;
+
+        protected IPhysicFunctions physicFunctions;
 
         // Optimizing garbage collection
         protected bool getMouseUp;
@@ -117,6 +122,15 @@ namespace MultiplayerARPG
             EnemyEntityDetector.findMonster = true;
             EnemyEntityDetector.findOnlyAliveMonsters = false;
             EnemyEntityDetector.findMonsterToAttack = true;
+            // Initial physic functions
+            if (CurrentGameInstance.DimensionType == DimensionType.Dimension3D)
+            {
+                physicFunctions = new PhysicFunctions(512);
+            }
+            else
+            {
+                physicFunctions = new PhysicFunctions2D(512);
+            }
         }
 
         protected override void OnDestroy()
@@ -172,7 +186,7 @@ namespace MultiplayerARPG
         private Vector3 GetBuildingPlacePosition(Vector3 position)
         {
             if (buildGridSnap)
-                position = new Vector3(Mathf.Round(position.x / buildGridSize) * buildGridSize, position.y, Mathf.Round(position.z / buildGridSize) * buildGridSize);
+                position = new Vector3(Mathf.Round(position.x / buildGridSize) * buildGridSize, position.y, Mathf.Round(position.z / buildGridSize) * buildGridSize) + buildGridOffsets;
             return position;
         }
 
@@ -192,12 +206,14 @@ namespace MultiplayerARPG
             if (SelectedEntity != null)
             {
                 character = SelectedEntity as BaseCharacterEntity;
-                if (character != null &&
-                    character != PlayerCharacterEntity &&
-                    character.CanReceiveDamageFrom(PlayerCharacterEntity))
-                    return true;
-                else
+                if (character == null ||
+                    character == PlayerCharacterEntity ||
+                    !character.CanReceiveDamageFrom(PlayerCharacterEntity))
+                {
                     character = null;
+                    return false;
+                }
+                return true;
             }
             return false;
         }
@@ -272,24 +288,18 @@ namespace MultiplayerARPG
         {
             attackDistance = PlayerCharacterEntity.GetAttackDistance(isLeftHand);
             attackFov = PlayerCharacterEntity.GetAttackFov(isLeftHand);
-
-            if (queueUsingSkill.skill != null && queueUsingSkill.skill.IsAttack())
-            {
-                // If skill is attack skill, set distance and fov by skill
-                GetUseSkillDistanceAndFov(out attackDistance, out attackFov);
-            }
             attackDistance -= PlayerCharacterEntity.StoppingDistance;
         }
 
-        public void GetUseSkillDistanceAndFov(out float castDistance, out float castFov)
+        public void GetUseSkillDistanceAndFov(bool isLeftHand, out float castDistance, out float castFov)
         {
             castDistance = CurrentGameInstance.conversationDistance;
             castFov = 360f;
             if (queueUsingSkill.skill != null)
             {
                 // If skill is attack skill, set distance and fov by skill
-                castDistance = queueUsingSkill.skill.GetCastDistance(PlayerCharacterEntity, queueUsingSkill.level, false);
-                castFov = queueUsingSkill.skill.GetCastFov(PlayerCharacterEntity, queueUsingSkill.level, false);
+                castDistance = queueUsingSkill.skill.GetCastDistance(PlayerCharacterEntity, queueUsingSkill.level, isLeftHand);
+                castFov = queueUsingSkill.skill.GetCastFov(PlayerCharacterEntity, queueUsingSkill.level, isLeftHand);
             }
             castDistance -= PlayerCharacterEntity.StoppingDistance;
         }

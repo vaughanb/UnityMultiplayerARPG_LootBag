@@ -72,7 +72,8 @@ namespace MultiplayerARPG
             RegisterNetFunction<bool, byte>(NetFuncPlayAttack);
             RegisterNetFunction<bool, byte, int, short>(NetFuncPlayUseSkill);
             RegisterNetFunction<bool, byte, int, short, Vector3>(NetFuncPlayUseSkillWithAimPosition);
-            RegisterNetFunction<bool>(NetFuncPlayReload);
+            RegisterNetFunction<bool, short>(NetFuncPlayReload);
+            RegisterNetFunction(NetFuncSkillCastingInterrupt);
             RegisterNetFunction(NetFuncSkillCastingInterrupted);
             RegisterNetFunction<PackedUInt>(NetFuncPickupItem);
             RegisterNetFunction<short, short>(NetFuncDropItem);
@@ -116,8 +117,8 @@ namespace MultiplayerARPG
             nonEquipItems.onOperation -= OnNonEquipItemsOperation;
             summons.onOperation -= OnSummonsOperation;
 
-            if (uiCharacterEntity != null)
-                Destroy(uiCharacterEntity.gameObject);
+            if (UICharacterEntity != null)
+                Destroy(UICharacterEntity.gameObject);
         }
     }
 }

@@ -78,7 +78,6 @@ namespace MultiplayerARPG
         public override int DataId { get { return MonsterDatabase.DataId; } set { } }
         public float DestroyDelay { get { return destroyDelay; } }
         public float DestroyRespawnDelay { get { return destroyRespawnDelay; } }
-        public bool IsWandering { get; set; }
 
         private readonly HashSet<uint> looters = new HashSet<uint>();
 
@@ -94,18 +93,18 @@ namespace MultiplayerARPG
             base.EntityUpdate();
             if (IsSummoned)
             {
-                if (Summoner)
+                if (!Summoner || Summoner.IsDead())
+                {
+                    // Summoner disappear so destroy it
+                    UnSummon();
+                }
+                else
                 {
                     if (Vector3.Distance(CacheTransform.position, Summoner.CacheTransform.position) > CurrentGameInstance.maxFollowSummonerDistance)
                     {
                         // Teleport to summoner if too far from summoner
                         Teleport(Summoner.GetSummonPosition());
                     }
-                }
-                else
-                {
-                    // Summoner disappear so destroy it
-                    UnSummon();
                 }
             }
             Profiler.EndSample();
@@ -184,7 +183,7 @@ namespace MultiplayerARPG
 
         public override float GetMoveSpeed()
         {
-            if (IsWandering)
+            if (ExtraMovementState.HasFlag(ExtraMovementState.IsWalking))
                 return MonsterDatabase.wanderMoveSpeed;
             return base.GetMoveSpeed();
         }

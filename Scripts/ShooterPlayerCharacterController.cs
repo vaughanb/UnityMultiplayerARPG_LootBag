@@ -512,7 +512,13 @@ namespace MultiplayerARPG
                 }
 
                 // Calculate aim distance by skill or weapon
-                if (queueUsingSkill.skill != null && queueUsingSkill.skill.IsAttack())
+                if (PlayerCharacterEntity.UsingSkill != null && PlayerCharacterEntity.UsingSkill.IsAttack())
+                {
+                    // Increase aim distance by skill attack distance
+                    attackDistance = PlayerCharacterEntity.UsingSkill.GetCastDistance(PlayerCharacterEntity, PlayerCharacterEntity.UsingSkillLevel, isLeftHandAttacking);
+                    attackFov = PlayerCharacterEntity.UsingSkill.GetCastFov(PlayerCharacterEntity, PlayerCharacterEntity.UsingSkillLevel, isLeftHandAttacking);
+                }
+                else if (queueUsingSkill.skill != null && queueUsingSkill.skill.IsAttack())
                 {
                     // Increase aim distance by skill attack distance
                     attackDistance = queueUsingSkill.skill.GetCastDistance(PlayerCharacterEntity, queueUsingSkill.level, isLeftHandAttacking);
