@@ -19,7 +19,9 @@ This add-on changes the loot system to drop loot into character loot bags on dea
 
 ![](Screenshots/UILootItems.png)
 
-4. Scroll down to 'Block Controller Uis' and increase size by 1. Then add LootItemsComponents to the new element.
+4. If you wish to have the loot dialog block the UI:
+  * Versions before 1.6: Scroll down to 'Block Controller Uis' and increase size by 1. Then add LootItemsComponents to the new element.
+  * Versions 1.6 and later: Select UILootDialog in the dialogs list and add the 'Block UI Controller' component to it.
 
 ![](Screenshots/BlockControllerUIs.png)
 
@@ -42,3 +44,7 @@ This add-on changes the loot system to drop loot into character loot bags on dea
 
 ![](Screenshots/MonsterCharacterSettings.png)
 
+#### Versions 1.6 and later:
+3. Open the corresponding monster database file for the monster you are editing.
+
+4. Remove loot from the 'Random Items' section and put it in the 'Random Loot Bag Items' section instead. This version does not disable the default loot system, so any items in the normal loot section will drop the ground.
