@@ -20,8 +20,8 @@ This add-on changes the loot system to drop loot into character loot bags on dea
 ![](Screenshots/UILootItems.png)
 
 4. If you wish to have the loot dialog block the UI:
-  * Versions before 1.6: Scroll down to 'Block Controller Uis' and increase size by 1. Then add LootItemsComponents to the new element.
   * Versions 1.6 and later: Select UILootDialog in the dialogs list and add the 'Block UI Controller' component to it.
+  * Versions before 1.6: Scroll down to 'Block Controller Uis' and increase size by 1. Then add LootItemsComponents to the new element.
 
 ![](Screenshots/BlockControllerUIs.png)
 
