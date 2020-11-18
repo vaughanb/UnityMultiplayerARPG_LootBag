@@ -12,6 +12,9 @@ namespace MultiplayerARPG
         public bool useLootBag = true;
         public GameObject lootSparkleEffect;
 
+        [NonSerialized]
+        public DateTime deathTime;
+
         private Transform lootSparkleTransform;
 
         private SyncListCharacterItem lootBag = new SyncListCharacterItem();
@@ -97,11 +100,11 @@ namespace MultiplayerARPG
         /// <param name="sourceItemIndex">index of the item in the loot bag</param>
         /// <param name="nonEquipIndex">index of the inventory slot to move the item to</param>
         /// <returns>true if successful</returns>
-        public bool RequestPickupLootBagItem(uint objectId, short sourceItemIndex, short nonEquipIndex)
+        public bool CallServerPickupLootBagItem(uint objectId, short sourceItemIndex, short nonEquipIndex)
         {
-            if (IsDead())
+            if (this.IsDead())
                 return false;
-            CallNetFunction(NetFuncPickupLootBagItem, FunctionReceivers.Server, objectId, sourceItemIndex, nonEquipIndex);
+            RPC(NetFuncPickupLootBagItem, FunctionReceivers.Server, objectId, sourceItemIndex, nonEquipIndex);
             return true;
         }
 
@@ -110,14 +113,15 @@ namespace MultiplayerARPG
         /// </summary>
         /// <param name="objectId">ID of the source object to loot from</param>
         /// <returns></returns>
-        public bool RequestPickupAllLootBagItems(uint objectId)
+        public bool CallServerPickupAllLootBagItems(uint objectId)
         {
-            if (IsDead())
+            if (this.IsDead())
                 return false;
-            CallNetFunction(NetFuncPickupAllLootBagItems, FunctionReceivers.Server, objectId);
+            RPC(NetFuncPickupAllLootBagItems, FunctionReceivers.Server, objectId);
             return true;
         }
 
+        [ServerRpc]
         /// <summary>
         /// Moves an item from the specified monster's loot bag to a slot in the player's 
         /// inventory. If no specific destination slot is specified, the first available slot is
@@ -183,6 +187,7 @@ namespace MultiplayerARPG
             }
         }
 
+        [ServerRpc]
         /// <summary>
         /// Removes all items from the target monster's loot bag and places them in the character's inventory.
         /// <param name="objectId">ID of the source object to loot from</param>

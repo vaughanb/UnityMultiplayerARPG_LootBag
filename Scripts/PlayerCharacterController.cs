@@ -24,41 +24,59 @@ namespace MultiplayerARPG
         
         public const float DETECT_MOUSE_DRAG_DISTANCE_SQUARED = 100f;
         public const float DETECT_MOUSE_HOLD_DURATION = 1f;
-        
-        public PlayerCharacterControllerMode controllerMode;
+
+        [Header("Camera Controls Prefabs")]
+        [SerializeField]
+        protected FollowCameraControls gameplayCameraPrefab;
+        [SerializeField]
+        protected FollowCameraControls minimapCameraPrefab;
+
+        [Header("Controller Settings")]
+        [SerializeField]
+        protected PlayerCharacterControllerMode controllerMode;
         [Tooltip("Set this to `TRUE` to find nearby enemy and follow it to attack while `Controller Mode` is `WASD`")]
-        public bool wasdLockAttackTarget;
+        [SerializeField]
+        protected bool wasdLockAttackTarget;
         [Tooltip("This will be used to find nearby enemy while `Controller Mode` is `Point Click` or when `Wasd Lock Attack Target` is `TRUE`")]
-        public float lockAttackTargetDistance = 10f;
+        [SerializeField]
+        protected float lockAttackTargetDistance = 10f;
         [Tooltip("This will be used to clear selected target when character move with WASD keys and far from target")]
-        public float wasdClearTargetDistance = 15f;
+        [SerializeField]
+        protected float wasdClearTargetDistance = 15f;
         [Tooltip("Set this to TRUE to move to target immediately when clicked on target, if this is FALSE it will not move to target immediately")]
-        public bool pointClickSetTargetImmediately;
+        [SerializeField]
+        protected bool pointClickSetTargetImmediately;
         [Tooltip("Set this to TRUE to interrupt casting skill when click on ground to move")]
-        public bool pointClickInterruptCastingSkill;
-        public GameObject targetObjectPrefab;
+        [SerializeField]
+        protected bool pointClickInterruptCastingSkill;
+        [Tooltip("The object which will represent where character is moving to")]
+        [SerializeField]
+        protected GameObject targetObjectPrefab;
 
         [Header("Building Settings")]
-        public bool buildGridSnap;
-        public Vector3 buildGridOffsets = Vector3.zero;
-        public float buildGridSize = 4f;
-        public bool buildRotationSnap;
-        public float buildRotateAngle = 45f;
+        [SerializeField]
+        protected bool buildGridSnap;
+        [SerializeField]
+        protected Vector3 buildGridOffsets = Vector3.zero;
+        [SerializeField]
+        protected float buildGridSize = 4f;
+        [SerializeField]
+        protected bool buildRotationSnap;
+        [SerializeField]
+        protected float buildRotateAngle = 45f;
 
-        protected bool isSprinting;
-        protected Vector3? destination;
-        protected Vector3 mouseDownPosition;
-        protected float mouseDownTime;
-        protected bool isMouseDragOrHoldOrOverUI;
-        protected uint lastNpcObjectId;
-
+        public FollowCameraControls CacheGameplayCameraControls { get; protected set; }
+        public FollowCameraControls CacheMinimapCameraControls { get; protected set; }
+        public NearbyEntityDetector ActivatableEntityDetector { get; protected set; }
+        public NearbyEntityDetector ItemDropEntityDetector { get; protected set; }
+        public NearbyEntityDetector EnemyEntityDetector { get; protected set; }
+        public Camera CacheGameplayCamera { get { return CacheGameplayCameraControls.CacheCamera; } }
+        public Camera CacheMiniMapCamera { get { return CacheMinimapCameraControls.CacheCamera; } }
+        public Transform CacheGameplayCameraTransform { get { return CacheGameplayCameraControls.CacheCameraTransform; } }
+        public Transform CacheMiniMapCameraTransform { get { return CacheMinimapCameraControls.CacheCameraTransform; } }
         public GameObject CacheTargetObject { get; protected set; }
-        protected Vector3? targetPosition;
-        protected TargetActionType targetActionType;
 
-        protected IPhysicFunctions physicFunctions;
-
-        // Optimizing garbage collection
+        // Input & control states variables
         protected bool getMouseUp;
         protected bool getMouseDown;
         protected bool getMouse;
@@ -66,26 +84,37 @@ namespace MultiplayerARPG
         protected bool isMouseDragDetected;
         protected bool isMouseHoldDetected;
         protected bool isMouseHoldAndNotDrag;
+        protected bool isSprinting;
+        protected Vector3? destination;
+        protected Vector3 mouseDownPosition;
+        protected float mouseDownTime;
+        protected bool isMouseDragOrHoldOrOverUI;
+        protected Vector3? targetPosition;
+        protected TargetActionType targetActionType;
+        protected IPhysicFunctions physicFunctions;
         protected DamageableEntity targetDamageable;
-        protected BaseCharacterEntity targetCharacterEntity;
         protected BasePlayerCharacterEntity targetPlayer;
         protected BaseMonsterCharacterEntity targetMonster;
         protected NpcEntity targetNpc;
         protected ItemDropEntity targetItemDrop;
         protected BuildingEntity targetBuilding;
         protected VehicleEntity targetVehicle;
+        protected WarpPortalEntity targetWarpPortal;
         protected HarvestableEntity targetHarvestable;
         protected Vector3 previousPointClickPosition = Vector3.positiveInfinity;
-        public NearbyEntityDetector ActivatableEntityDetector { get; protected set; }
-        public NearbyEntityDetector ItemDropEntityDetector { get; protected set; }
-        public NearbyEntityDetector EnemyEntityDetector { get; protected set; }
         protected int findingEnemyIndex;
         protected bool isLeftHandAttacking;
         protected bool isFollowingTarget;
+        protected bool didActionOnTarget;
+        protected float buildYRotate;
 
         protected override void Awake()
         {
             base.Awake();
+            if (gameplayCameraPrefab != null)
+                CacheGameplayCameraControls = Instantiate(gameplayCameraPrefab);
+            if (minimapCameraPrefab != null)
+                CacheMinimapCameraControls = Instantiate(minimapCameraPrefab);
             buildingItemIndex = -1;
             findingEnemyIndex = -1;
             isLeftHandAttacking = false;
@@ -108,6 +137,7 @@ namespace MultiplayerARPG
             ActivatableEntityDetector.findOnlyAliveBuildings = true;
             ActivatableEntityDetector.findOnlyActivatableBuildings = true;
             ActivatableEntityDetector.findVehicle = true;
+            ActivatableEntityDetector.findWarpPortal = true;
             // This entity detector will be find item drop entities to use when pressed pickup key
             tempGameObject = new GameObject("_ItemDropEntityDetector");
             ItemDropEntityDetector = tempGameObject.AddComponent<NearbyEntityDetector>();
@@ -124,18 +154,29 @@ namespace MultiplayerARPG
             EnemyEntityDetector.findMonsterToAttack = true;
             // Initial physic functions
             if (CurrentGameInstance.DimensionType == DimensionType.Dimension3D)
-            {
                 physicFunctions = new PhysicFunctions(512);
-            }
             else
-            {
                 physicFunctions = new PhysicFunctions2D(512);
-            }
+        }
+
+        protected override void Desetup(BasePlayerCharacterEntity characterEntity)
+        {
+            base.Desetup(characterEntity);
+
+            if (CacheGameplayCameraControls != null)
+                CacheGameplayCameraControls.target = null;
+
+            if (CacheMinimapCameraControls != null)
+                CacheMinimapCameraControls.target = null;
         }
 
         protected override void OnDestroy()
         {
             base.OnDestroy();
+            if (CacheGameplayCameraControls != null)
+                Destroy(CacheGameplayCameraControls.gameObject);
+            if (CacheMinimapCameraControls != null)
+                Destroy(CacheMinimapCameraControls.gameObject);
             if (CacheTargetObject != null)
                 Destroy(CacheTargetObject.gameObject);
             if (ActivatableEntityDetector != null)
@@ -151,7 +192,11 @@ namespace MultiplayerARPG
             if (PlayerCharacterEntity == null || !PlayerCharacterEntity.IsOwnerClient)
                 return;
 
-            base.Update();
+            if (CacheGameplayCameraControls != null)
+                CacheGameplayCameraControls.target = CameraTargetTransform;
+
+            if (CacheMinimapCameraControls != null)
+                CacheMinimapCameraControls.target = CameraTargetTransform;
 
             if (CacheTargetObject != null)
                 CacheTargetObject.gameObject.SetActive(destination.HasValue);
@@ -161,14 +206,12 @@ namespace MultiplayerARPG
                 ClearQueueUsingSkill();
                 destination = null;
                 isFollowingTarget = false;
-                if (CacheUISceneGameplay != null)
-                    CacheUISceneGameplay.SetTargetEntity(null);
                 CancelBuild();
+                CacheUISceneGameplay.SetTargetEntity(null);
             }
             else
             {
-                if (CacheUISceneGameplay != null)
-                    CacheUISceneGameplay.SetTargetEntity(SelectedEntity);
+                CacheUISceneGameplay.SetTargetEntity(SelectedEntity);
             }
 
             if (destination.HasValue)
@@ -190,14 +233,13 @@ namespace MultiplayerARPG
             return position;
         }
 
-        private Vector3 GetBuildingPlaceEulerAngles(Vector3 eulerAngles)
+        private Quaternion GetBuildingPlaceRotation(float anglesY)
         {
-            eulerAngles.x = 0;
-            eulerAngles.z = 0;
+            Vector3 eulerAngles = Vector3.zero;
             // Make Y rotation set to 0, 90, 180
             if (buildRotationSnap)
-                eulerAngles.y = Mathf.Round(eulerAngles.y / 90) * 90;
-            return eulerAngles;
+                eulerAngles.y = Mathf.Round(anglesY / 90) * 90;
+            return Quaternion.Euler(eulerAngles);
         }
 
         public bool TryGetSelectedTargetAsAttackingEntity(out BaseCharacterEntity character)
@@ -258,30 +300,10 @@ namespace MultiplayerARPG
             return true;
         }
 
-        public bool EntityIsHideOrDead(DamageableEntity entity)
-        {
-            return entity.IsDead() || (entity is BaseCharacterEntity && (entity as BaseCharacterEntity).IsHideOrDead);
-        }
-
         public bool TryGetTargetCharacter(out BaseCharacterEntity character)
         {
             character = null;
             return PlayerCharacterEntity.TryGetTargetEntity(out character);
-        }
-
-        public bool TryGetLootableCharacter(out BaseCharacterEntity character)
-        {
-            character = null;
-
-            if (TargetEntity != null && TargetEntity is BaseCharacterEntity)
-            {
-                character = TargetEntity as BaseCharacterEntity;
-                if (character.IsDead() && character.useLootBag && character.LootBag.Count > 0)
-                    return true;
-                else
-                    character = null;
-            }
-            return false;
         }
 
         public void GetAttackDistanceAndFov(bool isLeftHand, out float attackDistance, out float attackFov)
@@ -331,7 +353,7 @@ namespace MultiplayerARPG
 
         public void RequestAttack()
         {
-            if (PlayerCharacterEntity.RequestAttack(isLeftHandAttacking))
+            if (PlayerCharacterEntity.CallServerAttack(isLeftHandAttacking))
                 isLeftHandAttacking = !isLeftHandAttacking;
         }
 
@@ -339,20 +361,20 @@ namespace MultiplayerARPG
         {
             if (queueUsingSkill.skill != null && PlayerCharacterEntity.CanUseSkill())
             {
-                bool canUseSkill = false;
+                bool canUseSkill;
                 if (queueUsingSkill.itemIndex >= 0)
                 {
                     if (queueUsingSkill.aimPosition.HasValue)
-                        canUseSkill = PlayerCharacterEntity.RequestUseSkillItem(queueUsingSkill.itemIndex, isLeftHandAttacking, queueUsingSkill.aimPosition.Value);
+                        canUseSkill = PlayerCharacterEntity.CallServerUseSkillItem(queueUsingSkill.itemIndex, isLeftHandAttacking, queueUsingSkill.aimPosition.Value);
                     else
-                        canUseSkill = PlayerCharacterEntity.RequestUseSkillItem(queueUsingSkill.itemIndex, isLeftHandAttacking);
+                        canUseSkill = PlayerCharacterEntity.CallServerUseSkillItem(queueUsingSkill.itemIndex, isLeftHandAttacking);
                 }
                 else
                 {
                     if (queueUsingSkill.aimPosition.HasValue)
-                        canUseSkill = PlayerCharacterEntity.RequestUseSkill(queueUsingSkill.skill.DataId, isLeftHandAttacking, queueUsingSkill.aimPosition.Value);
+                        canUseSkill = PlayerCharacterEntity.CallServerUseSkill(queueUsingSkill.skill.DataId, isLeftHandAttacking, queueUsingSkill.aimPosition.Value);
                     else
-                        canUseSkill = PlayerCharacterEntity.RequestUseSkill(queueUsingSkill.skill.DataId, isLeftHandAttacking);
+                        canUseSkill = PlayerCharacterEntity.CallServerUseSkill(queueUsingSkill.skill.DataId, isLeftHandAttacking);
                 }
                 if (canUseSkill)
                     isLeftHandAttacking = !isLeftHandAttacking;

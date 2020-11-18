@@ -148,7 +148,7 @@ namespace MultiplayerARPG
         /// </summary>
         public void OnClickLootAll()
         {
-            playerCharacterEntity.RequestPickupAllLootBagItems(characterEntity.ObjectId);
+            playerCharacterEntity.CallServerPickupAllLootBagItems(characterEntity.ObjectId);
             closeBag = true;
         }
     }
