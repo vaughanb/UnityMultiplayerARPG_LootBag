@@ -48,3 +48,5 @@ This add-on changes the loot system to drop loot into character loot bags on dea
 3. Open the corresponding monster database file for the monster you are editing.
 
 4. Remove loot from the 'Random Items' section and put it in the 'Random Loot Bag Items' section instead. This version does not disable the default loot system, so any items in the normal loot section will drop the ground.
+
+![](Screenshots/LootBagRewards.png)
