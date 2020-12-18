@@ -25,6 +25,10 @@ This add-on changes the loot system to drop loot into character loot bags on dea
 
 ![](Screenshots/BlockControllerUIs.png)
 
+5. Open GameInstance in the version of 00Init you are using and swap the character controller with one of the custom ones from the LootBagAddon prefabs (if they exist in your version). If the controller prefabs are not included with your version of the addon, you can skip this step.
+
+![](Screenshots/GameInstance.png)
+
 #### For mobile only: 
 5. Add LootButton prefab to AttackAndAction object under MobileJoyStick in CanvasGameplayMobile.
 
