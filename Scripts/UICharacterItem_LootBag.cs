@@ -1,50 +1,48 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MultiplayerARPG
 {
     public partial class UICharacterItem
     {
-        ///// <summary>
-        ///// Uses the item.
-        ///// </summary>
-        //public void UseItem()
-        //{
-        //    BasePlayerCharacterEntity pc = Character as BasePlayerCharacterEntity;
+        /// <summary>
+        /// Uses the item.
+        /// </summary>
+        public void UseItem()
+        {
+            BasePlayerCharacterEntity pc = Character as BasePlayerCharacterEntity;
 
-        //    BaseItem item = CharacterItem.GetItem();
-        //    if (item == null)
-        //        return;
+            BaseItem item = CharacterItem.GetItem();
+            if (item == null)
+                return;
 
-        //    InventoryType inventoryType;
-        //    int itemIndex;
-        //    byte equipWeaponSet;
-        //    if (IsEquipped(pc, item.DataId, out inventoryType, out itemIndex, out equipWeaponSet))
-        //    {
-        //        pc.RequestUnEquipItem(InventoryType, (short)itemIndex, equipWeaponSet);
-        //        return;
-        //    }
+            InventoryType inventoryType;
+            int itemIndex;
+            byte equipWeaponSet;
+            if (IsEquipped(pc, item.DataId, out inventoryType, out itemIndex, out equipWeaponSet))
+            {
+                pc.RequestUnEquipItem(InventoryType, (short)itemIndex, equipWeaponSet);
+                return;
+            }
 
-        //    if (itemIndex < 0)
-        //        return;
+            if (itemIndex < 0)
+                return;
 
-        //    if (item.IsEquipment())
-        //    {
-        //        pc.RequestEquipItem((short)itemIndex);
-        //    }
-        //    else if (item.IsUsable())
-        //    {
-        //        if (item.IsSkill())
-        //        {
-        //            pc.RequestUseSkillItem((short)itemIndex, false, new Vector3(0f, 0f));
-        //        }
-        //        else
-        //        {
-        //            pc.RequestUseItem((short)itemIndex);
-        //        }
-        //    }
-        //}
+            if (item.IsEquipment())
+            {
+                pc.CallServerEquipItem((short)itemIndex);
+            }
+            else if (item.IsUsable())
+            {
+                if (item.IsSkill())
+                {
+                    pc.CallServerUseSkillItem((short)itemIndex, false, new Vector3(0f, 0f));
+                }
+                else
+                {
+                    pc.CallServerUseItem((short)itemIndex);
+                }
+            }
+        }
 
         /// <summary>
         /// Determines if the item is equipped. Also returns useful information about the item.

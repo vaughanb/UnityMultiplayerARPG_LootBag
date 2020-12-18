@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace MultiplayerARPG
@@ -34,6 +33,9 @@ namespace MultiplayerARPG
             return itemDrops;
         }
 
+        /// <summary>
+        /// Returns a list of random item drops.
+        /// </summary>
         public List<ItemDrop> CacheLootBagRandomItems
         {
             get
@@ -58,7 +60,7 @@ namespace MultiplayerARPG
                         lootBagitemDropTable.randomItems != null &&
                         lootBagitemDropTable.randomItems.Length > 0)
                     {
-                        for (i = 0; i < itemDropTable.randomItems.Length; ++i)
+                        for (i = 0; i < lootBagitemDropTable.randomItems.Length; ++i)
                         {
                             if (lootBagitemDropTable.randomItems[i].item == null ||
                                 lootBagitemDropTable.randomItems[i].amount <= 0 ||

@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MultiplayerARPG
 {
@@ -12,6 +10,9 @@ namespace MultiplayerARPG
         private PlayerCharacterController controller;
         private ShooterPlayerCharacterController shooterController;
 
+        /// <summary>
+        /// Checks for lootable entity nearby and activates loot button if found.
+        /// </summary>
         private void LateUpdate()
         {
             canActivate = false;

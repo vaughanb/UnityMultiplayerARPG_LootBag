@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &406334374686132390
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 407615465343518230}
+  - component: {fileID: 790608205953221858}
+  m_Layer: 0
+  m_Name: PlayerCharacterController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &407615465343518230
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406334374686132390}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &790608205953221858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406334374686132390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41959a8538772a54e8e7ceca6ffebf53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameplayCameraPrefab: {fileID: 114548782499701980, guid: 9e450ece85c264c48a1f642595379ac8,
+    type: 3}
+  minimapCameraPrefab: {fileID: 114548782499701980, guid: 280aed852e1f49946840d29f4118a058,
+    type: 3}
+  controllerMode: 2
+  wasdLockAttackTarget: 1
+  lockAttackTargetDistance: 10
+  wasdClearTargetDistance: 15
+  pointClickSetTargetImmediately: 0
+  pointClickInterruptCastingSkill: 0
+  targetObjectPrefab: {fileID: 1351887008497814, guid: 2ceafc14cf0f8c044a133a016b305afa,
+    type: 3}
+  buildGridSnap: 0
+  buildGridOffsets: {x: 0, y: 0, z: 0}
+  buildGridSize: 4
+  buildRotationSnap: 0
+  buildRotateAngle: 45

@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using LiteNetLibManager;
 using System;
@@ -14,7 +13,6 @@ namespace MultiplayerARPG
 
         [NonSerialized]
         public DateTime deathTime;
-
         private Transform lootSparkleTransform;
 
         private SyncListCharacterItem lootBag = new SyncListCharacterItem();
@@ -31,6 +29,9 @@ namespace MultiplayerARPG
 
         private bool enableSparkleEffect;
 
+        /// <summary>
+        /// Use EntityLateUpdate to check if sparkle effect should display.
+        /// </summary>
         protected override void EntityLateUpdate()
         {
             base.EntityLateUpdate();

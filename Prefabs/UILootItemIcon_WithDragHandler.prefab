@@ -62,6 +62,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -168,6 +169,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.9607843, g: 0.7647059, b: 0.19607843, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -193,11 +195,11 @@ GameObject:
   - component: {fileID: 222959295384563194}
   - component: {fileID: 114501471656320258}
   - component: {fileID: 114995711950157264}
-  - component: {fileID: 114987847931839752}
-  - component: {fileID: 114274090299979142}
-  - component: {fileID: 4254183371061430721}
+  - component: {fileID: 7012345246434570135}
+  - component: {fileID: 1511097297155570545}
+  - component: {fileID: -2925568177981153367}
   m_Layer: 5
-  m_Name: UILootItemIcon_WithDragHandler 1
+  m_Name: UILootItemIcon_WithDragHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -250,6 +252,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.7411765, g: 0.7411765, b: 0.7411765, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -305,8 +308,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 114501471656320258}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
---- !u!114 &114987847931839752
+      m_Calls:
+      - m_Target: {fileID: 7012345246434570135}
+        m_MethodName: OnClickSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &7012345246434570135
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -315,7 +329,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1464786769811892}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a732866d921423d449d4fee0417113e9, type: 3}
+  m_Script: {fileID: 11500000, guid: a6f267bf0adb15547ad70e9cf76a9436, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hideOnAwake: 0
@@ -386,6 +400,7 @@ MonoBehaviour:
   uiTextRarity: {fileID: 0}
   uiTextLevel: {fileID: 0}
   imageIcon: {fileID: 114894893612556186}
+  imageRarity: {fileID: 0}
   uiTextItemType: {fileID: 0}
   uiTextSellPrice: {fileID: 0}
   uiTextStack: {fileID: 114914474213375914}
@@ -404,6 +419,9 @@ MonoBehaviour:
   uiIncreaseSkillLevels: {fileID: 0}
   uiEquipmentSet: {fileID: 0}
   uiEquipmentSockets: {fileID: 0}
+  uiRefineItem: {fileID: 0}
+  uiDismantleItem: {fileID: 0}
+  uiRepairItem: {fileID: 0}
   uiArmorAmount: {fileID: 0}
   uiDamageAmount: {fileID: 0}
   uiTextBuilding: {fileID: 0}
@@ -425,6 +443,9 @@ MonoBehaviour:
   onSetUnEquippableData:
     m_PersistentCalls:
       m_Calls: []
+  onSetUsableData:
+    m_PersistentCalls:
+      m_Calls: []
   onSetStorageItemData:
     m_PersistentCalls:
       m_Calls: []
@@ -438,6 +459,18 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   onRefineItemDialogDisappear:
+    m_PersistentCalls:
+      m_Calls: []
+  onDismantleItemDialogAppear:
+    m_PersistentCalls:
+      m_Calls: []
+  onDismantleItemDialogDisappear:
+    m_PersistentCalls:
+      m_Calls: []
+  onRepairItemDialogAppear:
+    m_PersistentCalls:
+      m_Calls: []
+  onRepairItemDialogDisappear:
     m_PersistentCalls:
       m_Calls: []
   onEnhanceSocketItemDialogAppear:
@@ -459,13 +492,14 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   clones:
-  - {fileID: 114431633222429620}
+  - {fileID: 9111206137335632488}
   uiDragging: {fileID: 0}
   uiNextLevelItem: {fileID: 0}
+  uiComparingEquipments: []
   showAmountWhenMaxIsOne: 0
   showLevelAsDefault: 0
   dontAppendRefineLevelToTitle: 0
---- !u!114 &114274090299979142
+--- !u!114 &1511097297155570545
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -474,11 +508,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1464786769811892}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8acca1e657677894ab334e788517ce41, type: 3}
+  m_Script: {fileID: 11500000, guid: 1cf1279617b855d40b29e9463700b9d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiCharacterItem: {fileID: 114987847931839752}
---- !u!114 &4254183371061430721
+  uiCharacterItem: {fileID: 7012345246434570135}
+--- !u!114 &-2925568177981153367
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -487,14 +521,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 1464786769811892}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f513e60ac43c12f43961839a16063f3a, type: 3}
+  m_Script: {fileID: 11500000, guid: 9b27d3bbeeaff7143920ffb7483cf15f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   leftClick:
     m_PersistentCalls:
+      m_Calls: []
+  middleClick:
+    m_PersistentCalls:
+      m_Calls: []
+  rightClick:
+    m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 114987847931839752}
-        m_MethodName: OnClickSelect
+      - m_Target: {fileID: 7012345246434570135}
+        m_MethodName: OnClickLootItem
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -504,14 +544,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  middleClick:
-    m_PersistentCalls:
-      m_Calls: []
-  rightClick:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 114987847931839752}
-        m_MethodName: OnClickLootItem
+      - m_Target: {fileID: 7012345246434570135}
+        m_MethodName: Deselect
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -581,6 +615,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -654,6 +689,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -729,6 +765,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -785,8 +822,8 @@ GameObject:
   - component: {fileID: 224322634317190788}
   - component: {fileID: 222957563490236438}
   - component: {fileID: 114325293607690556}
-  - component: {fileID: 114431633222429620}
-  - component: {fileID: 114727626418922918}
+  - component: {fileID: 9111206137335632488}
+  - component: {fileID: 9128638720649651105}
   m_Layer: 5
   m_Name: UIItemIcon_Draggable
   m_TagString: Untagged
@@ -837,6 +874,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.7411765, g: 0.7411765, b: 0.7411765, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -850,7 +888,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &114431633222429620
+--- !u!114 &9111206137335632488
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -859,7 +897,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1511667013151664}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a732866d921423d449d4fee0417113e9, type: 3}
+  m_Script: {fileID: 11500000, guid: a6f267bf0adb15547ad70e9cf76a9436, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hideOnAwake: 0
@@ -930,6 +968,7 @@ MonoBehaviour:
   uiTextRarity: {fileID: 0}
   uiTextLevel: {fileID: 0}
   imageIcon: {fileID: 114401993983943636}
+  imageRarity: {fileID: 0}
   uiTextItemType: {fileID: 0}
   uiTextSellPrice: {fileID: 0}
   uiTextStack: {fileID: 0}
@@ -948,6 +987,9 @@ MonoBehaviour:
   uiIncreaseSkillLevels: {fileID: 0}
   uiEquipmentSet: {fileID: 0}
   uiEquipmentSockets: {fileID: 0}
+  uiRefineItem: {fileID: 0}
+  uiDismantleItem: {fileID: 0}
+  uiRepairItem: {fileID: 0}
   uiArmorAmount: {fileID: 0}
   uiDamageAmount: {fileID: 0}
   uiTextBuilding: {fileID: 0}
@@ -969,6 +1011,9 @@ MonoBehaviour:
   onSetUnEquippableData:
     m_PersistentCalls:
       m_Calls: []
+  onSetUsableData:
+    m_PersistentCalls:
+      m_Calls: []
   onSetStorageItemData:
     m_PersistentCalls:
       m_Calls: []
@@ -982,6 +1027,18 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   onRefineItemDialogDisappear:
+    m_PersistentCalls:
+      m_Calls: []
+  onDismantleItemDialogAppear:
+    m_PersistentCalls:
+      m_Calls: []
+  onDismantleItemDialogDisappear:
+    m_PersistentCalls:
+      m_Calls: []
+  onRepairItemDialogAppear:
+    m_PersistentCalls:
+      m_Calls: []
+  onRepairItemDialogDisappear:
     m_PersistentCalls:
       m_Calls: []
   onEnhanceSocketItemDialogAppear:
@@ -1005,10 +1062,11 @@ MonoBehaviour:
   clones: []
   uiDragging: {fileID: 0}
   uiNextLevelItem: {fileID: 0}
+  uiComparingEquipments: []
   showAmountWhenMaxIsOne: 0
   showLevelAsDefault: 0
   dontAppendRefineLevelToTitle: 0
---- !u!114 &114727626418922918
+--- !u!114 &9128638720649651105
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1017,7 +1075,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1511667013151664}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 31c6a0c56fcae894d9d023982b2fdbfb, type: 3}
+  m_Script: {fileID: 11500000, guid: 91347eef3bb686d4baf43fd5b49dd632, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   rootTransform: {fileID: 0}
@@ -1081,6 +1139,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.7411765, g: 0.7411765, b: 0.7411765, a: 1}
   m_RaycastTarget: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []

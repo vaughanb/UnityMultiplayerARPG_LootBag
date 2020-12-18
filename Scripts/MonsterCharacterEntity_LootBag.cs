@@ -1,6 +1,4 @@
-﻿using LiteNetLibManager;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using System;
 
@@ -14,12 +12,13 @@ namespace MultiplayerARPG
             onReceivedDamage += OnReceivedDamage;
         }
 
+        /// <summary>
+        /// Checks for death on damage received and spawns loot bag if dead.
+        /// </summary>
         protected void OnReceivedDamage(Vector3 fromPosition, IGameEntity attacker, CombatAmountType combatAmountType, int damage, CharacterItem weapon, BaseSkill skill, short skillLevel)
         {
             if (this.IsDead())
             {
-                Debug.Log("Target is dead.");
-
                 BaseCharacterEntity bce = this as BaseCharacterEntity;
                 bce.deathTime = DateTime.Now;
 

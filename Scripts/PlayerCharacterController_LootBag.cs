@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MultiplayerARPG
 {
@@ -8,6 +6,11 @@ namespace MultiplayerARPG
     {
         protected BaseCharacterEntity targetCharacterEntity;
 
+        /// <summary>
+        /// Returns true if target entity is a dead lootable character.
+        /// </summary>
+        /// <param name="character">Entity to check</param>
+        /// <returns>true if lootable, false otherwise</returns>
         public bool TryGetLootableCharacter(out BaseCharacterEntity character)
         {
             character = null;

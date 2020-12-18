@@ -8,6 +8,9 @@ public class UIMouseClickHandler : MonoBehaviour, IPointerClickHandler
     public UnityEvent middleClick;
     public UnityEvent rightClick;
 
+    /// <summary>
+    /// Allows for mouse events to be attached to any object.
+    /// </summary>
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData.button == PointerEventData.InputButton.Left)

@@ -1,105 +1,71 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MultiplayerARPG
 {
-    public class UILootItems : UIBase
+    public class UILootItems : UICharacterItems
     {
-        [Header("UI Elements")]
-        public UICharacterItem uiItemDialog;
-        public UICharacterItem uiCharacterItemPrefab;
-        public Transform uiCharacterItemContainer;
+        public UILootItem uiLootItemDialog;
 
         private BasePlayerCharacterEntity playerCharacterEntity;
         private BaseCharacterEntity characterEntity;
 
-        private UIList cacheCharacterItemList;
-        public UIList CacheCharacterItemList
-        {
-            get
-            {
-                if (cacheCharacterItemList == null)
-                {
-                    cacheCharacterItemList = gameObject.AddComponent<UIList>();
-                    cacheCharacterItemList.uiPrefab = uiCharacterItemPrefab.gameObject;
-                    cacheCharacterItemList.uiContainer = uiCharacterItemContainer;
-                }
-                return cacheCharacterItemList;
-            }
-        }
-
-        private UICharacterItemSelectionManager cacheCharacterItemSelectionManager;
-        public UICharacterItemSelectionManager CacheCharacterItemSelectionManager
-        {
-            get
-            {
-                if (cacheCharacterItemSelectionManager == null)
-                    cacheCharacterItemSelectionManager = GetComponent<UICharacterItemSelectionManager>();
-                if (cacheCharacterItemSelectionManager == null)
-                    cacheCharacterItemSelectionManager = gameObject.AddComponent<UICharacterItemSelectionManager>();
-                cacheCharacterItemSelectionManager.selectionMode = UISelectionMode.SelectSingle;
-                return cacheCharacterItemSelectionManager;
-            }
-        }
-
         private bool closeBag;
 
-        public override void Show()
+        /// <summary>
+        /// Configures the selected item to be view in the UILootItemDialog window.
+        /// </summary>
+        /// <param name="ui">UICharacterItem being selected</param>
+        protected override void OnSelectCharacterItem(UICharacterItem ui)
         {
-            closeBag = false;
-            root.SetActive(true);
-
-            CacheCharacterItemSelectionManager.eventOnSelected.RemoveListener(OnSelectCharacterItem);
-            CacheCharacterItemSelectionManager.eventOnSelected.AddListener(OnSelectCharacterItem);
-            CacheCharacterItemSelectionManager.eventOnDeselected.RemoveListener(OnDeselectCharacterItem);
-            CacheCharacterItemSelectionManager.eventOnDeselected.AddListener(OnDeselectCharacterItem);
-            base.Show();
-        }
-
-        public override void Hide()
-        {
-            // Hide
-            CacheCharacterItemSelectionManager.DeselectSelectedUI();
-            base.Hide();
-        }
-
-        protected void OnSelectCharacterItem(UICharacterItem ui)
-        {
-            if (uiItemDialog == null)
+            if (uiLootItemDialog == null)
                 return;
 
             if (ui.Data.characterItem.IsEmptySlot())
             {
-                CacheCharacterItemSelectionManager.DeselectSelectedUI();
+                CacheItemSelectionManager.DeselectSelectedUI();
                 return;
             }
             else
             {
-                uiItemDialog.Show();
-                uiItemDialog.Data = new UICharacterItemData(CharacterItem.Create(ui.Data.characterItem.GetItem()), 1, InventoryType.NonEquipItems);
+                if (!uiLootItemDialog.isActiveAndEnabled)
+                    uiLootItemDialog.gameObject.SetActive(true);
+
+                uiLootItemDialog.selectionManager = CacheItemSelectionManager;
+                uiLootItemDialog.Setup(ui.Data, Character, ui.IndexOfData);
+                uiLootItemDialog.Show();
             }
         }
 
-        protected void OnDeselectCharacterItem(UICharacterItem ui)
+        /// <summary>
+        /// Closes the item UI on item deselect.
+        /// </summary>
+        /// <param name="ui">Character item being deselected</param>
+        protected override void OnDeselectCharacterItem(UICharacterItem ui)
         {
             if (uiItemDialog == null)
                 return;
 
-            uiItemDialog.Hide();
+            CloseItemUI();
         }
 
-        private void Update()
+        /// <summary>
+        /// Updates the loot items and closes the bag if it has no contents.
+        /// </summary>
+        protected override void Update()
         {
+            if (characterEntity == null)
+                CloseBag();
+                
             UpdateLootItems();
 
             if (closeBag && characterEntity != null && characterEntity.LootBag.Count == 0)
-            {
-                closeBag = false;
-                Hide();
-            }
+                CloseBag();
         }
 
+        /// <summary>
+        /// Updates loot items and character entity.
+        /// </summary>
+        /// <param name="baseCharacterEntity">BaseCharacterEntity being looted</param>
         public void UpdateData(BaseCharacterEntity baseCharacterEntity = null)
         {
             characterEntity = baseCharacterEntity;
@@ -119,25 +85,26 @@ namespace MultiplayerARPG
         /// </summary>
         public void UpdateLootItems()
         {
-            int selectedIdx = CacheCharacterItemSelectionManager.SelectedUI != null ? CacheCharacterItemSelectionManager.IndexOf(CacheCharacterItemSelectionManager.SelectedUI) : -1;
-            CacheCharacterItemSelectionManager.DeselectSelectedUI();
-            CacheCharacterItemSelectionManager.Clear();
+            int selectedIdx = CacheItemSelectionManager.SelectedUI != null ? CacheItemSelectionManager.IndexOf(CacheItemSelectionManager.SelectedUI) : -1;
+            CacheItemSelectionManager.DeselectSelectedUI();
+            CacheItemSelectionManager.Clear();
 
             if (characterEntity == null || characterEntity.LootBag == null)
                 return;
 
             UICharacterItem tempUiCharacterItem;
-            CacheCharacterItemList.Generate(characterEntity.LootBag, (index, characterItem, ui) =>
+            CacheItemList.Generate(characterEntity.LootBag, (index, characterItem, ui) =>
             {
                 tempUiCharacterItem = ui.GetComponent<UICharacterItem>();
-                tempUiCharacterItem.Setup(new UICharacterItemData(characterItem, characterItem.level, InventoryType.LootItems), BasePlayerCharacterController.OwningCharacter, index);
+                InventoryType LootItem = (InventoryType)5;
+                tempUiCharacterItem.Setup(new UICharacterItemData(characterItem, characterItem.level, LootItem), BasePlayerCharacterController.OwningCharacter, index);
                 tempUiCharacterItem.Show();
 
-                UICharacterItemDragHandler dragHandler = tempUiCharacterItem.GetComponentInChildren<UICharacterItemDragHandler>();
+                UILootItemDragHandler dragHandler = tempUiCharacterItem.GetComponentInChildren<UILootItemDragHandler>();
                 if (dragHandler != null)
                     dragHandler.SetupForLootItems(tempUiCharacterItem, characterEntity.ObjectId);
 
-                CacheCharacterItemSelectionManager.Add(tempUiCharacterItem);
+                CacheItemSelectionManager.Add(tempUiCharacterItem);
                 if (selectedIdx == index)
                     tempUiCharacterItem.OnClickSelect();
             });
@@ -148,8 +115,29 @@ namespace MultiplayerARPG
         /// </summary>
         public void OnClickLootAll()
         {
+            CloseItemUI();
+
             playerCharacterEntity.CallServerPickupAllLootBagItems(characterEntity.ObjectId);
             closeBag = true;
+        }
+
+        /// <summary>
+        /// Calls close on the attached UILootItemDialog.
+        /// </summary>
+        public void CloseItemUI()
+        {
+            uiLootItemDialog.Close();
+        }
+
+        /// <summary>
+        /// Closes the bag and any open item UI windows.
+        /// </summary>
+        public void CloseBag()
+        {
+            CloseItemUI();
+            Hide();
+
+            closeBag = false;
         }
     }
 }
