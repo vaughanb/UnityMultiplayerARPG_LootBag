@@ -20,7 +20,14 @@ namespace MultiplayerARPG
             byte equipWeaponSet;
             if (IsEquipped(pc, item.DataId, out inventoryType, out itemIndex, out equipWeaponSet))
             {
-                pc.RequestUnEquipItem(InventoryType, (short)itemIndex, equipWeaponSet);
+                GameInstance.ClientInventoryHandlers.RequestUnEquipItem(
+                    inventoryType,
+                    (short)itemIndex,
+                    equipWeaponSet,
+                    -1,
+                    UIInventoryResponses.ResponseUnEquipArmor,
+                        UIInventoryResponses.ResponseUnEquipWeapon);
+
                 return;
             }
 
@@ -29,7 +36,11 @@ namespace MultiplayerARPG
 
             if (item.IsEquipment())
             {
-                pc.CallServerEquipItem((short)itemIndex);
+                GameInstance.ClientInventoryHandlers.RequestEquipItem(
+                    pc, 
+                    (short)itemIndex, 
+                    UIInventoryResponses.ResponseEquipArmor,
+                    UIInventoryResponses.ResponseEquipWeapon);
             }
             else if (item.IsUsable())
             {

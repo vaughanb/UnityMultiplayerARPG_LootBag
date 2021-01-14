@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace MultiplayerARPG
 {
@@ -1063,6 +1063,8 @@ namespace MultiplayerARPG
 
         private void ReloadAmmo()
         {
+            if (WeaponAbility != null && WeaponAbility.ShouldDeactivateWhenReload)
+                WeaponAbility.ForceDeactivated();
             // Reload ammo at server
             if (!PlayerCharacterEntity.EquipWeapons.rightHand.IsAmmoFull())
                 PlayerCharacterEntity.CallServerReload(false);
@@ -1250,7 +1252,13 @@ namespace MultiplayerARPG
                     out equipWeaponSet,
                     out characterItem))
                 {
-                    PlayerCharacterEntity.RequestUnEquipItem(inventoryType, (short)itemIndex, equipWeaponSet);
+                    GameInstance.ClientInventoryHandlers.RequestUnEquipItem(
+                        inventoryType,
+                        (short)itemIndex,
+                        equipWeaponSet,
+                        -1,
+                        UIInventoryResponses.ResponseUnEquipArmor,
+                        UIInventoryResponses.ResponseUnEquipWeapon);
                     return;
                 }
                 item = characterItem.GetItem();
@@ -1264,7 +1272,11 @@ namespace MultiplayerARPG
 
             if (item.IsEquipment())
             {
-                PlayerCharacterEntity.CallServerEquipItem((short)itemIndex);
+                GameInstance.ClientInventoryHandlers.RequestEquipItem(
+                        PlayerCharacterEntity,
+                        (short)itemIndex,
+                        UIInventoryResponses.ResponseEquipArmor,
+                        UIInventoryResponses.ResponseEquipWeapon);
             }
             else if (item.IsSkill())
             {
@@ -1549,42 +1561,6 @@ namespace MultiplayerARPG
         {
             if (isCancel)
                 CancelBuild();
-        }
-
-        [Header("Zoom Weapon Ability Settings")]
-        [SerializeField]
-        private Image zoomCrosshairImage;
-
-        public bool ShowZoomCrosshair
-        {
-            get
-            {
-                return zoomCrosshairImage != null && zoomCrosshairImage.gameObject.activeSelf;
-            }
-            set
-            {
-                if (zoomCrosshairImage != null &&
-                    zoomCrosshairImage.gameObject.activeSelf != value)
-                {
-                    // Hide crosshair when not active
-                    zoomCrosshairImage.gameObject.SetActive(value);
-                }
-            }
-        }
-
-        public void InitialZoomCrosshair()
-        {
-            if (zoomCrosshairImage != null)
-            {
-                zoomCrosshairImage.preserveAspect = true;
-                zoomCrosshairImage.raycastTarget = false;
-            }
-        }
-
-        public void SetZoomCrosshairSprite(Sprite sprite)
-        {
-            if (zoomCrosshairImage != null)
-                zoomCrosshairImage.sprite = sprite;
         }
     }
 }
