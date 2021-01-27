@@ -11,7 +11,7 @@ namespace MultiplayerARPG
         protected override void UpdateData()
         {
             if (Character == null)
-                Character = OwningCharacter;
+                Character = GameInstance.PlayingCharacter;
 
             base.UpdateData();
         }

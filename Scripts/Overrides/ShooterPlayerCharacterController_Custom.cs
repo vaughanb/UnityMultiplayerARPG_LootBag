@@ -1025,7 +1025,10 @@ namespace MultiplayerARPG
             {
                 anyKeyPressed = true;
                 // Switch equip weapon set
-                PlayerCharacterEntity.CallServerSwitchEquipWeaponSet((byte)(PlayerCharacterEntity.EquipWeaponSet + 1));
+                GameInstance.ClientInventoryHandlers.RequestSwitchEquipWeaponSet(new RequestSwitchEquipWeaponSetMessage()
+                {
+                    equipWeaponSet = (byte)(PlayerCharacterEntity.EquipWeaponSet + 1),
+                }, ClientInventoryActions.ResponseSwitchEquipWeaponSet);
             }
 
             if (!anyKeyPressed && !activatingEntityOrDoAction)

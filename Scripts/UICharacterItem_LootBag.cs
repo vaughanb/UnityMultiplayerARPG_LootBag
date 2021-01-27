@@ -116,11 +116,13 @@ namespace MultiplayerARPG
         /// </summary>
         public void OnClickLootItem()
         {
-            BaseCharacterEntity characterEntity = OwningCharacter.GetTargetEntity() as BaseCharacterEntity;
+            BaseCharacterEntity player = GameInstance.PlayingCharacter as BaseCharacterEntity;
+
+            BaseCharacterEntity characterEntity = player.GetTargetEntity() as BaseCharacterEntity;
             if (characterEntity == null)
                 return;
 
-            OwningCharacter.CallServerPickupLootBagItem(characterEntity.Identity.ObjectId, (short)IndexOfData, -1);
+            player.CallServerPickupLootBagItem(characterEntity.Identity.ObjectId, (short)IndexOfData, -1);
         }
     }
 }

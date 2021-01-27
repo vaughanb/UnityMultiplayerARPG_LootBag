@@ -136,7 +136,7 @@ namespace MultiplayerARPG
                         if (targetPlayer && !targetPlayer.IsHideOrDead())
                         {
                             // Found activating entity as player character entity
-                            if (!targetPlayer.IsHideOrDead() && !targetPlayer.IsAlly(PlayerCharacterEntity))
+                            if (!targetPlayer.IsHideOrDead() && !targetPlayer.IsAlly(PlayerCharacterEntity.GetInfo()))
                                 SetTarget(targetPlayer, TargetActionType.Attack);
                             else
                                 SetTarget(targetPlayer, TargetActionType.Activate);
