@@ -5,10 +5,11 @@ This add-on changes the loot system to drop loot into character loot bags on dea
 
 ![](Screenshots/LootBag.png)
 
-## Installation instructions
+## Installation Video
 
 [![Installation Video 1.62](https://img.youtube.com/vi/y5G7v12YDJI/0.jpg)](https://www.youtube.com/watch?v=y5G7v12YDJI)
 
+## Installation instructions
 1. Download and import add-on package from: https://github.com/vaughanb/UnityMultiplayerARPG_LootBag/releases
 
 ### CanvasGameplay Prefab
