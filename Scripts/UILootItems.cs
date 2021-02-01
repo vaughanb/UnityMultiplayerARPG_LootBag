@@ -117,7 +117,11 @@ namespace MultiplayerARPG
         {
             CloseItemUI();
 
-            playerCharacterEntity.CallServerPickupAllLootBagItems(characterEntity.ObjectId);
+            GameInstance.LootBagHandlers.RequestPickupAllLootBagItems(new RequestPickupAllLootBagItemsMessage()
+            {
+                dataId = (int)characterEntity.ObjectId,
+            }, LootBagActions.ResponsePickupAllLootBagItems);
+
             closeBag = true;
         }
 

@@ -114,7 +114,7 @@ namespace MultiplayerARPG
         /// Calls RequestMoveItemFromLootBag to remove the item from the lootbag and move it to 
         /// the player's inventory.
         /// </summary>
-        public void OnClickLootItem()
+        public void OnClickLootItem(short toIndex = -1)
         {
             BaseCharacterEntity player = GameInstance.PlayingCharacter as BaseCharacterEntity;
 
@@ -122,7 +122,12 @@ namespace MultiplayerARPG
             if (characterEntity == null)
                 return;
 
-            player.CallServerPickupLootBagItem(characterEntity.Identity.ObjectId, (short)IndexOfData, -1);
+            GameInstance.LootBagHandlers.RequestPickupLootBagItem(new RequestPickupLootBagItemMessage()
+            {
+                dataId = (int)characterEntity.Identity.ObjectId,
+                fromIndex = (short)IndexOfData,
+                toIndex = toIndex,
+            }, LootBagActions.ResponsePickupLootBagItem);
         }
     }
 }

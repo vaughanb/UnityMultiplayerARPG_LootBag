@@ -50,8 +50,12 @@ namespace MultiplayerARPG
 
             if (uiCharacterItem.InventoryType == InventoryType.NonEquipItems)
             {
-                BasePlayerCharacterEntity owningCharacter = BasePlayerCharacterController.OwningCharacter;
-                owningCharacter.CallServerPickupLootBagItem(draggedItemUI.sourceObjectId, (short)draggedItemUI.uiCharacterItem.IndexOfData, (short)uiCharacterItem.IndexOfData);
+                GameInstance.LootBagHandlers.RequestPickupLootBagItem(new RequestPickupLootBagItemMessage()
+                {
+                    dataId = (int)draggedItemUI.sourceObjectId,
+                    fromIndex = (short)draggedItemUI.uiCharacterItem.IndexOfData,
+                    toIndex = (short)uiCharacterItem.IndexOfData,
+                }, LootBagActions.ResponsePickupLootBagItem);
             }
         }
     }

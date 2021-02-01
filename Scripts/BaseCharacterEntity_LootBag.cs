@@ -94,52 +94,25 @@ namespace MultiplayerARPG
         }
 
         /// <summary>
-        /// Calls NetFuncPickupLootBagItem to pick up the item and move it from the monster loot bag to
-        /// the player's inventory.
-        /// </summary>
-        /// <param name="objectId">ID of the source object to loot from</param>
-        /// <param name="sourceItemIndex">index of the item in the loot bag</param>
-        /// <param name="nonEquipIndex">index of the inventory slot to move the item to</param>
-        /// <returns>true if successful</returns>
-        public bool CallServerPickupLootBagItem(uint objectId, short sourceItemIndex, short nonEquipIndex)
-        {
-            if (this.IsDead())
-                return false;
-            RPC(NetFuncPickupLootBagItem, FunctionReceivers.Server, objectId, sourceItemIndex, nonEquipIndex);
-            return true;
-        }
-
-        /// <summary>
-        /// Picks up all loot bag items from the target monster and moves them to the player's inventory.
-        /// </summary>
-        /// <param name="objectId">ID of the source object to loot from</param>
-        /// <returns></returns>
-        public bool CallServerPickupAllLootBagItems(uint objectId)
-        {
-            if (this.IsDead())
-                return false;
-            RPC(NetFuncPickupAllLootBagItems, FunctionReceivers.Server, objectId);
-            return true;
-        }
-
-        [ServerRpc]
-        /// <summary>
         /// Moves an item from the specified monster's loot bag to a slot in the player's 
         /// inventory. If no specific destination slot is specified, the first available slot is
         /// chosen.
         /// </summary>
+        /// <param name="gameMessage">game message</param>
         /// <param name="objectId">ID of the source object to loot from</param>
         /// <param name="lootBagIndex">index of the item to look in the loot bag</param>
         /// <param name="nonEquipIndex">index of the inventory slot to place the item</param>
-        protected virtual void NetFuncPickupLootBagItem(uint objectId, short lootBagIndex, short nonEquipIndex)
+        public bool PickupLootBagItem(out UITextKeys gameMessage, uint objectId, short lootBagIndex, short nonEquipIndex)
         {
+            gameMessage = UITextKeys.NONE;
+
             BaseCharacterEntity characterEntity = GetCharacterEntity(objectId);
 
             if (characterEntity == null || characterEntity.LootBag.Count == 0)
-                return;
+                return false;
 
             if (lootBagIndex > characterEntity.LootBag.Count - 1)
-                return;
+                return false;
 
             CharacterItem lootItem = characterEntity.LootBag[lootBagIndex].Clone();
 
@@ -186,19 +159,24 @@ namespace MultiplayerARPG
                     NonEquipItems[nonEquipIndex] = lootItem;
                 }
             }
+
+            GameInstance.ServerGameMessageHandlers.NotifyRewardItem(ConnectionId, lootItem.dataId, lootItem.amount);
+
+            return true;
         }
 
-        [ServerRpc]
         /// <summary>
         /// Removes all items from the target monster's loot bag and places them in the character's inventory.
         /// <param name="objectId">ID of the source object to loot from</param>
         /// </summary>
-        protected virtual void NetFuncPickupAllLootBagItems(uint objectId)
+        public bool PickupAllLootBagItems(out UITextKeys gameMessage, uint objectId)
         {
+            gameMessage = UITextKeys.NONE;
+
             BaseCharacterEntity characterEntity = GetCharacterEntity(objectId);
 
             if (characterEntity == null || characterEntity.LootBag.Count == 0)
-                return;
+                return false;
 
             Stack<int> itemsToRemove = new Stack<int>();
 
@@ -216,10 +194,14 @@ namespace MultiplayerARPG
                     this.FillEmptySlots();
                     itemsToRemove.Push(i);
                 }
+
+                GameInstance.ServerGameMessageHandlers.NotifyRewardItem(ConnectionId, lootItem.dataId, lootItem.amount);
             }
 
             foreach (int itemIndex in itemsToRemove)
                 characterEntity.RemoveLootItemAt(itemIndex);
+
+            return true;
         }
 
         /// <summary>
