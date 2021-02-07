@@ -25,8 +25,8 @@ namespace MultiplayerARPG
                     (short)itemIndex,
                     equipWeaponSet,
                     -1,
-                    UIInventoryResponses.ResponseUnEquipArmor,
-                        UIInventoryResponses.ResponseUnEquipWeapon);
+                    ClientInventoryActions.ResponseUnEquipArmor,
+                        ClientInventoryActions.ResponseUnEquipWeapon);
 
                 return;
             }
@@ -38,9 +38,9 @@ namespace MultiplayerARPG
             {
                 GameInstance.ClientInventoryHandlers.RequestEquipItem(
                     pc, 
-                    (short)itemIndex, 
-                    UIInventoryResponses.ResponseEquipArmor,
-                    UIInventoryResponses.ResponseEquipWeapon);
+                    (short)itemIndex,
+                    ClientInventoryActions.ResponseEquipArmor,
+                    ClientInventoryActions.ResponseEquipWeapon);
             }
             else if (item.IsUsable())
             {
