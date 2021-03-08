@@ -15,7 +15,7 @@ namespace MultiplayerARPG
         /// Configures the selected item to be view in the UILootItemDialog window.
         /// </summary>
         /// <param name="ui">UICharacterItem being selected</param>
-        protected override void OnSelectCharacterItem(UICharacterItem ui)
+        protected override void OnSelect(UICharacterItem ui)
         {
             if (uiLootItemDialog == null)
                 return;
@@ -40,7 +40,7 @@ namespace MultiplayerARPG
         /// Closes the item UI on item deselect.
         /// </summary>
         /// <param name="ui">Character item being deselected</param>
-        protected override void OnDeselectCharacterItem(UICharacterItem ui)
+        protected override void OnDeselect(UICharacterItem ui)
         {
             if (uiItemDialog == null)
                 return;
