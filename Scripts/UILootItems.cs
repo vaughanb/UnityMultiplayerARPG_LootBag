@@ -42,7 +42,7 @@ namespace MultiplayerARPG
         /// <param name="ui">Character item being deselected</param>
         protected override void OnDeselect(UICharacterItem ui)
         {
-            if (uiItemDialog == null)
+            if (uiDialog == null)
                 return;
 
             CloseItemUI();
