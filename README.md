@@ -1,7 +1,9 @@
 # UnityMultiplayerARPG_LootBag
 LootBag add-on for SURIYUN's MMORPG Kit for Unity.
 
-This add-on changes the loot system to drop loot into character loot bags on death, rather than dropping items directly to the ground. Please note that this works on the 3D version of the kit only.
+This add-on changes the loot system to drop loot into character loot bags on death, rather than dropping items directly to the ground. 
+
+**Please note that this works on the 3D version of the kit only.**
 
 ![](Screenshots/LootBag.png)
 
