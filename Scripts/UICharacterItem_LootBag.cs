@@ -46,7 +46,7 @@ namespace MultiplayerARPG
             {
                 if (item.IsSkill())
                 {
-                    pc.CallServerUseSkillItem((short)itemIndex, false, new Vector3(0f, 0f));
+                    pc.CallServerUseSkillItem((short)itemIndex, false, new AimPosition());
                 }
                 else
                 {

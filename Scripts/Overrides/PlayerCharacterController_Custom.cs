@@ -113,7 +113,6 @@ namespace MultiplayerARPG
                     }
                     else if (mouseUpOnTarget)
                     {
-                        targetCharacterEntity = tempTransform.GetComponent<BaseCharacterEntity>();
                         targetPlayer = tempTransform.GetComponent<BasePlayerCharacterEntity>();
                         targetMonster = tempTransform.GetComponent<BaseMonsterCharacterEntity>();
                         targetNpc = tempTransform.GetComponent<NpcEntity>();
@@ -133,7 +132,7 @@ namespace MultiplayerARPG
                             tempHasMapPosition = false;
                             break;
                         }
-                        if (targetPlayer && !targetPlayer.IsHideOrDead())
+                        if (targetPlayer)
                         {
                             // Found activating entity as player character entity
                             if (!targetPlayer.IsHideOrDead() && !targetPlayer.IsAlly(PlayerCharacterEntity.GetInfo()))

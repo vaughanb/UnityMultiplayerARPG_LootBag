@@ -547,10 +547,6 @@ namespace MultiplayerARPG
             // Update movement and camera pitch
             UpdateMovementInputs();
 
-            // Update aim position
-            PlayerCharacterEntity.HasAimPosition = true;
-            PlayerCharacterEntity.AimPosition = aimPosition;
-
             // Update input
             if (!updatingInputs)
             {
@@ -1399,7 +1395,11 @@ namespace MultiplayerARPG
         public void Attack(bool isLeftHand)
         {
             // Set this to `TRUE` to update crosshair
-            isDoingAction = PlayerCharacterEntity.CallServerAttack(isLeftHand);
+            isDoingAction = PlayerCharacterEntity.CallServerAttack(isLeftHand, new AimPosition()
+            {
+                hasValue = true,
+                value = aimPosition,
+            });
         }
 
         public void WeaponCharge(bool isLeftHand)
@@ -1475,19 +1475,17 @@ namespace MultiplayerARPG
         {
             if (queueUsingSkill.skill != null)
             {
+                AimPosition aimPosition = new AimPosition();
+                aimPosition.hasValue = queueUsingSkill.aimPosition.HasValue;
+                if (aimPosition.hasValue)
+                    aimPosition.value = queueUsingSkill.aimPosition.Value;
                 if (queueUsingSkill.itemIndex >= 0)
                 {
-                    if (queueUsingSkill.aimPosition.HasValue)
-                        isDoingAction = PlayerCharacterEntity.CallServerUseSkillItem(queueUsingSkill.itemIndex, isLeftHand, queueUsingSkill.aimPosition.Value);
-                    else
-                        isDoingAction = PlayerCharacterEntity.CallServerUseSkillItem(queueUsingSkill.itemIndex, isLeftHand);
+                    isDoingAction = PlayerCharacterEntity.CallServerUseSkillItem(queueUsingSkill.itemIndex, isLeftHand, aimPosition);
                 }
                 else
                 {
-                    if (queueUsingSkill.aimPosition.HasValue)
-                        isDoingAction = PlayerCharacterEntity.CallServerUseSkill(queueUsingSkill.skill.DataId, isLeftHand, queueUsingSkill.aimPosition.Value);
-                    else
-                        isDoingAction = PlayerCharacterEntity.CallServerUseSkill(queueUsingSkill.skill.DataId, isLeftHand);
+                    isDoingAction = PlayerCharacterEntity.CallServerUseSkill(queueUsingSkill.skill.DataId, isLeftHand, aimPosition);
                 }
             }
             ClearQueueUsingSkill();
