@@ -114,8 +114,14 @@ namespace MultiplayerARPG
             if (lootBagIndex > characterEntity.LootBag.Count - 1)
                 return false;
 
-            CharacterItem lootItem = characterEntity.LootBag[lootBagIndex].Clone();
+            CharacterItem lootItem = characterEntity.LootBag[lootBagIndex].Clone(true);
+            if (lootItem.IsEmptySlot())
+            {
+                gameMessage = UITextKeys.UI_ERROR_INVALID_ITEM_INDEX;
+                return false;
+            }
 
+            bool itemLooted = false;
             if (nonEquipIndex < 0)
             {
                 if (lootItem.IsEmptySlot())
@@ -124,6 +130,7 @@ namespace MultiplayerARPG
                 {
                     this.FillEmptySlots();
                     characterEntity.RemoveLootItemAt(lootBagIndex);
+                    itemLooted = true;
                 }
             }
             else
@@ -148,6 +155,7 @@ namespace MultiplayerARPG
                         characterEntity.LootBag[lootBagIndex] = lootItem;
                         NonEquipItems[nonEquipIndex] = toItem;
                     }
+                    itemLooted = true;
                 }
                 else
                 {
@@ -157,12 +165,14 @@ namespace MultiplayerARPG
                         characterEntity.LootBag[lootBagIndex] = toItem;
 
                     NonEquipItems[nonEquipIndex] = lootItem;
+                    itemLooted = true;
                 }
             }
 
-            GameInstance.ServerGameMessageHandlers.NotifyRewardItem(ConnectionId, lootItem.dataId, lootItem.amount);
+            if (itemLooted)
+                GameInstance.ServerGameMessageHandlers.NotifyRewardItem(ConnectionId, lootItem.dataId, lootItem.amount);
 
-            return true;
+            return itemLooted;
         }
 
         /// <summary>

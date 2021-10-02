@@ -8,7 +8,6 @@ namespace MultiplayerARPG
 
         private BasePlayerCharacterEntity playerCharacterEntity;
         private BaseCharacterEntity characterEntity;
-
         private bool closeBag;
 
         /// <summary>
@@ -37,18 +36,6 @@ namespace MultiplayerARPG
         }
 
         /// <summary>
-        /// Closes the item UI on item deselect.
-        /// </summary>
-        /// <param name="ui">Character item being deselected</param>
-        protected override void OnDeselect(UICharacterItem ui)
-        {
-            if (uiDialog == null)
-                return;
-
-            CloseItemUI();
-        }
-
-        /// <summary>
         /// Updates the loot items and closes the bag if it has no contents.
         /// </summary>
         protected override void Update()
@@ -60,6 +47,10 @@ namespace MultiplayerARPG
 
             if (closeBag && characterEntity != null && characterEntity.LootBag.Count == 0)
                 CloseBag();
+
+            if (uiLootItemDialog != null && uiLootItemDialog.IsVisible() && uiLootItemDialog.selectionManager.GetSelectedUI() == null) {
+                CloseItemUI();
+            }
         }
 
         /// <summary>
@@ -99,6 +90,7 @@ namespace MultiplayerARPG
                 InventoryType LootItem = (InventoryType)5;
                 tempUiCharacterItem.Setup(new UICharacterItemData(characterItem, characterItem.level, LootItem), BasePlayerCharacterController.OwningCharacter, index);
                 tempUiCharacterItem.Show();
+                tempUiCharacterItem.SetOwningCharacter((int)characterEntity.ObjectId);
 
                 UILootItemDragHandler dragHandler = tempUiCharacterItem.GetComponentInChildren<UILootItemDragHandler>();
                 if (dragHandler != null)
@@ -108,6 +100,22 @@ namespace MultiplayerARPG
                 if (selectedIdx == index)
                     tempUiCharacterItem.OnClickSelect();
             });
+        }
+
+        /// <summary>
+        /// Takes the selected item in the loot bag.
+        /// </summary>
+        public void OnClickLootSelected()
+        {
+            int selectedIdx = CacheSelectionManager.SelectedUI != null ? CacheSelectionManager.IndexOf(CacheSelectionManager.SelectedUI) : -1;
+            if (selectedIdx >= 0) {
+                GameInstance.LootBagHandlers.RequestPickupLootBagItem(new RequestPickupLootBagItemMessage()
+                {
+                    dataId = (int)characterEntity.ObjectId,
+                    fromIndex = (short)selectedIdx,
+                    toIndex = -1
+                }, LootBagActions.ResponsePickupLootBagItem);
+            }
         }
 
         /// <summary>
@@ -130,6 +138,7 @@ namespace MultiplayerARPG
         /// </summary>
         public void CloseItemUI()
         {
+            Debug.Log("Closing Item UI");
             uiLootItemDialog.Close();
         }
 

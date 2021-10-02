@@ -4,56 +4,14 @@ namespace MultiplayerARPG
 {
     public partial class UICharacterItem
     {
+        protected int owningCharacterId;
+
         /// <summary>
-        /// Uses the item.
+        /// Sets the character data ID of the entity that owns the item.
         /// </summary>
-        public void UseItem()
+        public void SetOwningCharacter(int dataId) 
         {
-            BasePlayerCharacterEntity pc = Character as BasePlayerCharacterEntity;
-            BasePlayerCharacterController pcc = Character as BasePlayerCharacterController;
-
-            BaseItem item = CharacterItem.GetItem();
-            if (item == null)
-                return;
-
-            InventoryType inventoryType;
-            int itemIndex;
-            byte equipWeaponSet;
-            if (IsEquipped(pc, item.DataId, out inventoryType, out itemIndex, out equipWeaponSet))
-            {
-                GameInstance.ClientInventoryHandlers.RequestUnEquipItem(
-                    inventoryType,
-                    (short)itemIndex,
-                    equipWeaponSet,
-                    -1,
-                    ClientInventoryActions.ResponseUnEquipArmor,
-                        ClientInventoryActions.ResponseUnEquipWeapon);
-
-                return;
-            }
-
-            if (itemIndex < 0)
-                return;
-
-            if (item.IsEquipment())
-            {
-                GameInstance.ClientInventoryHandlers.RequestEquipItem(
-                    pc, 
-                    (short)itemIndex,
-                    ClientInventoryActions.ResponseEquipArmor,
-                    ClientInventoryActions.ResponseEquipWeapon);
-            }
-            else if (item.IsUsable())
-            {
-                if (item.IsSkill())
-                {
-                    pcc.SetQueueUsingSkill(new AimPosition(), (item as ISkillItem).UsingSkill, (item as ISkillItem).UsingSkillLevel, (short)itemIndex);
-                }
-                else
-                {
-                    pc.CallServerUseItem((short)itemIndex);
-                }
-            }
+            owningCharacterId = dataId;
         }
 
         /// <summary>
@@ -112,20 +70,14 @@ namespace MultiplayerARPG
         }
 
         /// <summary>
-        /// Calls RequestMoveItemFromLootBag to remove the item from the lootbag and move it to 
+        /// Calls RequestPickupLootBagItem to remove the item from the lootbag and move it to 
         /// the player's inventory.
         /// </summary>
         public void OnClickLootItem(short toIndex = -1)
         {
-            BaseCharacterEntity player = GameInstance.PlayingCharacter as BaseCharacterEntity;
-
-            BaseCharacterEntity characterEntity = player.GetTargetEntity() as BaseCharacterEntity;
-            if (characterEntity == null)
-                return;
-
             GameInstance.LootBagHandlers.RequestPickupLootBagItem(new RequestPickupLootBagItemMessage()
             {
-                dataId = (int)characterEntity.Identity.ObjectId,
+                dataId = owningCharacterId,
                 fromIndex = (short)IndexOfData,
                 toIndex = toIndex,
             }, LootBagActions.ResponsePickupLootBagItem);

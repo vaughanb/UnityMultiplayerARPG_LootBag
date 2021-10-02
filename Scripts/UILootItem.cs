@@ -17,6 +17,14 @@ namespace MultiplayerARPG
         }
 
         /// <summary>
+        /// Loots the current item.
+        /// </summary>
+        public void OnClickLootItem()
+        {
+            (this as UICharacterItem).OnClickLootItem();
+        }
+
+        /// <summary>
         /// Deselects and hides the item.
         /// </summary>
         public void Close()

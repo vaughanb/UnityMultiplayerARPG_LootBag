@@ -62,6 +62,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -169,6 +170,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.9607843, g: 0.7647059, b: 0.19607843, a: 1}
   m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -252,6 +254,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.7411765, g: 0.7411765, b: 0.7411765, a: 1}
   m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -280,6 +283,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Navigation:
     m_Mode: 3
+    m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
@@ -310,6 +314,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 7012345246434570135}
+        m_TargetAssemblyTypeName: 
         m_MethodName: OnClickSelect
         m_Mode: 1
         m_Arguments:
@@ -392,6 +397,12 @@ MonoBehaviour:
   formatKeySkill:
     localeKey: 217
     customKey: 
+  formatKeyCoolDownDuration:
+    localeKey: 45
+    customKey: 
+  formatKeyCoolDownRemainsDuration:
+    localeKey: 5
+    customKey: 
   formatKeyItemType:
     localeKey: 58
     customKey: 
@@ -405,9 +416,37 @@ MonoBehaviour:
   uiTextSellPrice: {fileID: 0}
   uiTextStack: {fileID: 114914474213375914}
   uiTextDurability: {fileID: 0}
+  uiGageDurability:
+    displayType: 0
+    textValue: {fileID: 0}
+    imageGage: {fileID: 0}
+    formatCurrentByMax:
+      localeKey: 8
+      customKey: 
+    formatCurrentAmount: N0
+    formatMaxAmount: N0
+    formatPercentage:
+      localeKey: 6
+      customKey: 
+    formatPercentageAmount: N0
   uiTextWeight: {fileID: 0}
   uiTextExp: {fileID: 0}
+  uiGageExp:
+    displayType: 0
+    textValue: {fileID: 0}
+    imageGage: {fileID: 0}
+    formatCurrentByMax:
+      localeKey: 8
+      customKey: 
+    formatCurrentAmount: N0
+    formatMaxAmount: N0
+    formatPercentage:
+      localeKey: 6
+      customKey: 
+    formatPercentageAmount: N0
   uiTextLockRemainsDuration: {fileID: 114359447112042518}
+  lockObjects: []
+  noLockObjects: []
   uiRequirement: {fileID: 0}
   uiIncreaseStats: {fileID: 0}
   uiIncreaseStatsRate: {fileID: 0}
@@ -424,10 +463,33 @@ MonoBehaviour:
   uiRepairItem: {fileID: 0}
   uiArmorAmount: {fileID: 0}
   uiDamageAmount: {fileID: 0}
+  uiTextCurrentAmmo: {fileID: 0}
+  uiTextReserveAmmo: {fileID: 0}
+  uiTextSumAmmo: {fileID: 0}
+  requireAmmoSymbols: []
+  noRequireAmmoSymbols: []
+  gageAmmo:
+    displayType: 0
+    textValue: {fileID: 0}
+    imageGage: {fileID: 0}
+    formatCurrentByMax:
+      localeKey: 8
+      customKey: 
+    formatCurrentAmount: N0
+    formatMaxAmount: N0
+    formatPercentage:
+      localeKey: 6
+      customKey: 
+    formatPercentageAmount: N0
   uiTextBuilding: {fileID: 0}
   uiTextPet: {fileID: 0}
   uiTextMount: {fileID: 0}
   uiTextSkill: {fileID: 0}
+  uiTextCoolDownDuration: {fileID: 0}
+  uiTextCoolDownRemainsDuration: {fileID: 0}
+  imageCoolDownGage: {fileID: 0}
+  countDownObjects: []
+  noCountDownObjects: []
   onSetLevelZeroData:
     m_PersistentCalls:
       m_Calls: []
@@ -441,6 +503,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   onSetUnEquippableData:
+    m_PersistentCalls:
+      m_Calls: []
+  onSetUnknowSourceData:
     m_PersistentCalls:
       m_Calls: []
   onSetUsableData:
@@ -499,6 +564,7 @@ MonoBehaviour:
   showAmountWhenMaxIsOne: 0
   showLevelAsDefault: 0
   dontAppendRefineLevelToTitle: 0
+  dontShowComparingEquipments: 0
 --- !u!114 &1511097297155570545
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -512,6 +578,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiCharacterItem: {fileID: 7012345246434570135}
+  doNotUnEquipItem: 0
+  doNotSwapOrMergeItem: 0
+  doNotEquipItem: 0
+  doNotMoveToStorage: 0
+  doNotMoveFromStorage: 0
+  doNotSwapOrMergeStorageItem: 0
+  doNotSwapOrMergeWithStorageItem: 0
+  doNotSwapOrMergeWithInventoryItem: 0
 --- !u!114 &-2925568177981153367
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -534,6 +608,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 7012345246434570135}
+        m_TargetAssemblyTypeName: MultiplayerARPG.UILootItem, Assembly-CSharp
         m_MethodName: OnClickLootItem
         m_Mode: 1
         m_Arguments:
@@ -545,6 +620,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 7012345246434570135}
+        m_TargetAssemblyTypeName: 
         m_MethodName: Deselect
         m_Mode: 1
         m_Arguments:
@@ -615,6 +691,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -689,6 +766,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -765,6 +843,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -874,6 +953,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.7411765, g: 0.7411765, b: 0.7411765, a: 1}
   m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -960,6 +1040,12 @@ MonoBehaviour:
   formatKeySkill:
     localeKey: 217
     customKey: 
+  formatKeyCoolDownDuration:
+    localeKey: 45
+    customKey: 
+  formatKeyCoolDownRemainsDuration:
+    localeKey: 5
+    customKey: 
   formatKeyItemType:
     localeKey: 58
     customKey: 
@@ -973,9 +1059,37 @@ MonoBehaviour:
   uiTextSellPrice: {fileID: 0}
   uiTextStack: {fileID: 0}
   uiTextDurability: {fileID: 0}
+  uiGageDurability:
+    displayType: 0
+    textValue: {fileID: 0}
+    imageGage: {fileID: 0}
+    formatCurrentByMax:
+      localeKey: 8
+      customKey: 
+    formatCurrentAmount: N0
+    formatMaxAmount: N0
+    formatPercentage:
+      localeKey: 6
+      customKey: 
+    formatPercentageAmount: N0
   uiTextWeight: {fileID: 0}
   uiTextExp: {fileID: 0}
+  uiGageExp:
+    displayType: 0
+    textValue: {fileID: 0}
+    imageGage: {fileID: 0}
+    formatCurrentByMax:
+      localeKey: 8
+      customKey: 
+    formatCurrentAmount: N0
+    formatMaxAmount: N0
+    formatPercentage:
+      localeKey: 6
+      customKey: 
+    formatPercentageAmount: N0
   uiTextLockRemainsDuration: {fileID: 0}
+  lockObjects: []
+  noLockObjects: []
   uiRequirement: {fileID: 0}
   uiIncreaseStats: {fileID: 0}
   uiIncreaseStatsRate: {fileID: 0}
@@ -992,10 +1106,33 @@ MonoBehaviour:
   uiRepairItem: {fileID: 0}
   uiArmorAmount: {fileID: 0}
   uiDamageAmount: {fileID: 0}
+  uiTextCurrentAmmo: {fileID: 0}
+  uiTextReserveAmmo: {fileID: 0}
+  uiTextSumAmmo: {fileID: 0}
+  requireAmmoSymbols: []
+  noRequireAmmoSymbols: []
+  gageAmmo:
+    displayType: 0
+    textValue: {fileID: 0}
+    imageGage: {fileID: 0}
+    formatCurrentByMax:
+      localeKey: 8
+      customKey: 
+    formatCurrentAmount: N0
+    formatMaxAmount: N0
+    formatPercentage:
+      localeKey: 6
+      customKey: 
+    formatPercentageAmount: N0
   uiTextBuilding: {fileID: 0}
   uiTextPet: {fileID: 0}
   uiTextMount: {fileID: 0}
   uiTextSkill: {fileID: 0}
+  uiTextCoolDownDuration: {fileID: 0}
+  uiTextCoolDownRemainsDuration: {fileID: 0}
+  imageCoolDownGage: {fileID: 0}
+  countDownObjects: []
+  noCountDownObjects: []
   onSetLevelZeroData:
     m_PersistentCalls:
       m_Calls: []
@@ -1009,6 +1146,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   onSetUnEquippableData:
+    m_PersistentCalls:
+      m_Calls: []
+  onSetUnknowSourceData:
     m_PersistentCalls:
       m_Calls: []
   onSetUsableData:
@@ -1066,6 +1206,7 @@ MonoBehaviour:
   showAmountWhenMaxIsOne: 0
   showLevelAsDefault: 0
   dontAppendRefineLevelToTitle: 0
+  dontShowComparingEquipments: 0
 --- !u!114 &9128638720649651105
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1079,6 +1220,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rootTransform: {fileID: 0}
+  scrollRectAllowing: 0
+  scrollRect: {fileID: 0}
+  onStart:
+    m_PersistentCalls:
+      m_Calls: []
+  onBeginDrag:
+    m_PersistentCalls:
+      m_Calls: []
+  onEndDrag:
+    m_PersistentCalls:
+      m_Calls: []
+  requireDropArea: 0
 --- !u!1 &1907501016766728
 GameObject:
   m_ObjectHideFlags: 0
@@ -1139,6 +1292,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.7411765, g: 0.7411765, b: 0.7411765, a: 1}
   m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
