@@ -113,6 +113,7 @@ namespace MultiplayerARPG
                     }
                     else if (mouseUpOnTarget)
                     {
+                        targetCharacterEntity = tempTransform.GetComponent<BaseCharacterEntity>();
                         targetPlayer = tempTransform.GetComponent<BasePlayerCharacterEntity>();
                         targetMonster = tempTransform.GetComponent<BaseMonsterCharacterEntity>();
                         targetNpc = tempTransform.GetComponent<NpcEntity>();
@@ -233,7 +234,7 @@ namespace MultiplayerARPG
                     if (PlayerCharacterEntity.IsPlayingActionAnimation())
                     {
                         if (pointClickInterruptCastingSkill)
-                            PlayerCharacterEntity.CallServerSkillCastingInterrupt();
+                            PlayerCharacterEntity.InterruptCastingSkill();
                     }
                     else
                     {

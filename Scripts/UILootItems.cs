@@ -22,7 +22,7 @@ namespace MultiplayerARPG
 
             if (ui.Data.characterItem.IsEmptySlot())
             {
-                CacheItemSelectionManager.DeselectSelectedUI();
+                CacheSelectionManager.DeselectSelectedUI();
                 return;
             }
             else
@@ -30,7 +30,7 @@ namespace MultiplayerARPG
                 if (!uiLootItemDialog.isActiveAndEnabled)
                     uiLootItemDialog.gameObject.SetActive(true);
 
-                uiLootItemDialog.selectionManager = CacheItemSelectionManager;
+                uiLootItemDialog.selectionManager = CacheSelectionManager;
                 uiLootItemDialog.Setup(ui.Data, Character, ui.IndexOfData);
                 uiLootItemDialog.Show();
             }
@@ -85,15 +85,15 @@ namespace MultiplayerARPG
         /// </summary>
         public void UpdateLootItems()
         {
-            int selectedIdx = CacheItemSelectionManager.SelectedUI != null ? CacheItemSelectionManager.IndexOf(CacheItemSelectionManager.SelectedUI) : -1;
-            CacheItemSelectionManager.DeselectSelectedUI();
-            CacheItemSelectionManager.Clear();
+            int selectedIdx = CacheSelectionManager.SelectedUI != null ? CacheSelectionManager.IndexOf(CacheSelectionManager.SelectedUI) : -1;
+            CacheSelectionManager.DeselectSelectedUI();
+            CacheSelectionManager.Clear();
 
             if (characterEntity == null || characterEntity.LootBag == null)
                 return;
 
             UICharacterItem tempUiCharacterItem;
-            CacheItemList.Generate(characterEntity.LootBag, (index, characterItem, ui) =>
+            CacheList.Generate(characterEntity.LootBag, (index, characterItem, ui) =>
             {
                 tempUiCharacterItem = ui.GetComponent<UICharacterItem>();
                 InventoryType LootItem = (InventoryType)5;
@@ -104,7 +104,7 @@ namespace MultiplayerARPG
                 if (dragHandler != null)
                     dragHandler.SetupForLootItems(tempUiCharacterItem, characterEntity.ObjectId);
 
-                CacheItemSelectionManager.Add(tempUiCharacterItem);
+                CacheSelectionManager.Add(tempUiCharacterItem);
                 if (selectedIdx == index)
                     tempUiCharacterItem.OnClickSelect();
             });

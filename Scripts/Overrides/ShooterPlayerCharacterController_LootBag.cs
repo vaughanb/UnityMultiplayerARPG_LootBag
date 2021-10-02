@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace MultiplayerARPG
 {
-    public partial class ShooterPlayerCharacterController_Custom : ShooterPlayerCharacterController 
+    public partial class ShooterPlayerCharacterController_LootBag : ShooterPlayerCharacterController 
     {
         protected override async UniTaskVoid UpdateInputs_BattleMode()
         {

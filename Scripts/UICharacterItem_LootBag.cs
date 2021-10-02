@@ -10,6 +10,7 @@ namespace MultiplayerARPG
         public void UseItem()
         {
             BasePlayerCharacterEntity pc = Character as BasePlayerCharacterEntity;
+            BasePlayerCharacterController pcc = Character as BasePlayerCharacterController;
 
             BaseItem item = CharacterItem.GetItem();
             if (item == null)
@@ -46,7 +47,7 @@ namespace MultiplayerARPG
             {
                 if (item.IsSkill())
                 {
-                    pc.CallServerUseSkillItem((short)itemIndex, false, new AimPosition());
+                    pcc.SetQueueUsingSkill(new AimPosition(), (item as ISkillItem).UsingSkill, (item as ISkillItem).UsingSkillLevel, (short)itemIndex);
                 }
                 else
                 {

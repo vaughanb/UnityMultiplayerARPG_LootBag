@@ -7,7 +7,7 @@ namespace MultiplayerARPG
 {
     public abstract partial class BaseCharacterEntity : DamageableEntity, ICharacterData
     {
-        [Header("Loot Settings")]
+        [Category("LootBag Settings")]
         public bool useLootBag = true;
         public GameObject lootSparkleEffect;
 
