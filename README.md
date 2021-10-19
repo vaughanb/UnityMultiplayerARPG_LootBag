@@ -15,6 +15,7 @@ Download and import add-on package from: https://github.com/vaughanb/UnityMultip
 ### GameDataBase
 Add the provided GameData files for 'Loot Bag Visible' and/or 'Loot Bag Invisible'. This is important or the entities will not be correctly registered for spawning.
 
+![](Screenshots/GameDatabaseLootBagItems.png)
 
 ### CanvasGameplay Prefab
 1. Open CanvasGameplay prefab. If you are using mobile, open CanvasGameplayMobile instead!
