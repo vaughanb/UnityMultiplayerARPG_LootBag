@@ -1,18 +1,20 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MultiplayerARPG
 {
-    public partial class MonsterCharacter : BaseCharacter
+    public abstract partial class BaseCharacter : BaseGameData
     {
-        [Header("Loot Bag Rewards")]
-        [SerializeField]
-        private ItemDrop[] randomLootBagItems;
-        [SerializeField]
-        private ItemDropTable lootBagitemDropTable;
+        [Category("Loot Bag Settings")]
+        public bool useLootBag = false;
+        public bool dropEmptyBag = false;
+        public LootBagEntity lootBagEntity;
+        public ItemDrop[] randomLootBagItems;
+        public ItemDropTable lootBagItemDropTable;
+        public int maxRandomLootItems = 5;
 
         [System.NonSerialized]
-        private List<ItemDrop> cacheRandomLootBagItems;
+        protected List<ItemDrop> cacheRandomLootBagItems;
 
         /// <summary>
         /// Returns a random collection of item drops.
@@ -21,10 +23,10 @@ namespace MultiplayerARPG
         public List<ItemDrop> GetRandomItems()
         {
             List<ItemDrop> itemDrops = new List<ItemDrop>();
-            for (int countDrops = 0; countDrops < CacheLootBagRandomItems.Count && countDrops < maxDropItems; ++countDrops)
+            for (int countDrops = 0; countDrops < CacheLootBagRandomItems.Count && countDrops < maxRandomLootItems; ++countDrops)
             {
                 ItemDrop randomItem = CacheLootBagRandomItems[Random.Range(0, CacheLootBagRandomItems.Count)];
-                if (randomItem.item == null || randomItem.amount == 0 || Random.value > randomItem.dropRate)
+                if (randomItem.item == null || randomItem.maxAmount == 0 || Random.value > randomItem.dropRate)
                     continue;
 
                 itemDrops.Add(randomItem);
@@ -50,23 +52,23 @@ namespace MultiplayerARPG
                         for (i = 0; i < randomLootBagItems.Length; ++i)
                         {
                             if (randomLootBagItems[i].item == null ||
-                                randomLootBagItems[i].amount <= 0 ||
+                                randomLootBagItems[i].maxAmount <= 0 ||
                                 randomLootBagItems[i].dropRate <= 0)
                                 continue;
                             cacheRandomLootBagItems.Add(randomLootBagItems[i]);
                         }
                     }
-                    if (lootBagitemDropTable != null &&
-                        lootBagitemDropTable.randomItems != null &&
-                        lootBagitemDropTable.randomItems.Length > 0)
+                    if (lootBagItemDropTable != null &&
+                        lootBagItemDropTable.randomItems != null &&
+                        lootBagItemDropTable.randomItems.Length > 0)
                     {
-                        for (i = 0; i < lootBagitemDropTable.randomItems.Length; ++i)
+                        for (i = 0; i < lootBagItemDropTable.randomItems.Length; ++i)
                         {
-                            if (lootBagitemDropTable.randomItems[i].item == null ||
-                                lootBagitemDropTable.randomItems[i].amount <= 0 ||
-                                lootBagitemDropTable.randomItems[i].dropRate <= 0)
+                            if (lootBagItemDropTable.randomItems[i].item == null ||
+                                lootBagItemDropTable.randomItems[i].maxAmount <= 0 ||
+                                lootBagItemDropTable.randomItems[i].dropRate <= 0)
                                 continue;
-                            cacheRandomLootBagItems.Add(lootBagitemDropTable.randomItems[i]);
+                            cacheRandomLootBagItems.Add(lootBagItemDropTable.randomItems[i]);
                         }
                     }
                 }
