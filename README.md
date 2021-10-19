@@ -20,9 +20,9 @@ Add the provided GameData files for 'Loot Bag Visible' and/or 'Loot Bag Invisibl
 ### CanvasGameplay Prefab
 1. Open CanvasGameplay prefab. If you are using mobile, open CanvasGameplayMobile instead!
 
-2. Add UILootBagStorageDialog prefab from the add-on prefabs directory to Dialogs on CanvasGameplay.
+2. Add UILootBagStorageDialog prefab from the add-on prefabs directory to UIDialogs_Standalone on CanvasGameplay.
 
-![](Screenshots/CanvasGameplay_Dialogs.png)
+![](Screenshots/CanvasGameplay_UILootBagStorageDialog.png)
 
 3. Replace UISceneGameplay script on CanvasGameplay with included UISceneGameplay_LootBag script. This can be done by selecting Debug mode at the top-right of the inspector. Then simply drag UISceneGameplay_LootBag.cs onto 'Script' where UISceneGameplay is currently.
 
