@@ -10,7 +10,7 @@ For versions prior to 1.70, refer to instructions here: https://github.com/vaugh
 
 For version 1.70 and later:
 
-1. Download and import add-on package from: https://github.com/vaughanb/UnityMultiplayerARPG_LootBag/releases
+Download and import add-on package from: https://github.com/vaughanb/UnityMultiplayerARPG_LootBag/releases
 
 ### GameDataBase
 Add the provided GameData files for 'Loot Bag Visible' and/or 'Loot Bag Invisible'. This is important or the entities will not be correctly registered for spawning.
