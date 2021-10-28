@@ -1,7 +1,3 @@
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-
 namespace MultiplayerARPG
 {
     public class UILootBagItems : UIStorageItems
@@ -25,12 +21,14 @@ namespace MultiplayerARPG
         /// </summary>
         public void OnClickLootAll()
         {
-            int itemCount = CacheSelectionManager.Count;
-            for (int i = itemCount; i > 0; i--)
+            if (CacheSelectionManager != null)
+                CacheSelectionManager.DeselectAll();
+
+            GameInstance.ClientStorageHandlers.RequestMoveAllItemsFromStorage(new RequestMoveAllItemsFromStorageMessage()
             {
-                UICharacterItem uici = CacheSelectionManager.Get(i-1);
-                uici.MoveItemFromStorage(uici.InventoryType, uici.EquipSlotIndex, -1, uici.CharacterItem.amount);
-            }
+                storageType = GameInstance.OpenedStorageType,
+                storageOwnerId = GameInstance.OpenedStorageOwnerId,
+            }, LootBagStorageActions.ResponseMoveAllItemsFromStorage);
 
             shouldClose = true;
         }

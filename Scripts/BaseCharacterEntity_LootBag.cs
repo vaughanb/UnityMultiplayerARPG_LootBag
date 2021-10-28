@@ -7,6 +7,10 @@ namespace MultiplayerARPG
     public abstract partial class BaseCharacterEntity : DamageableEntity, ICharacterData
     {
         protected BaseCharacter characterDB;
+        protected LootBagEntity lootBagEntity;
+
+        private const string visibleLootBagName = "LootBagEntityVisible";
+        private const string invisibleLootBagName = "LootBagEntityInvisible";
 
         [DevExtMethods("Awake")]
         protected void OnAwake()
@@ -35,7 +39,32 @@ namespace MultiplayerARPG
                 return;
             }
 
-            if (characterDB.useLootBag)
+            // Determine which loot bag entity to use based on character DB.
+            switch (characterDB.lootBagEntity)
+            {
+                case LootBagEntitySelection.Visible:
+                    if (GameInstance.Singleton.LootBagEntities.ContainsKey(visibleLootBagName))
+                        lootBagEntity = GameInstance.Singleton.LootBagEntities[visibleLootBagName];
+                    break;
+                case LootBagEntitySelection.Invisible:
+                    if (GameInstance.Singleton.LootBagEntities.ContainsKey(invisibleLootBagName))
+                        lootBagEntity = GameInstance.Singleton.LootBagEntities[invisibleLootBagName];
+                    break;
+                case LootBagEntitySelection.Override:
+                    lootBagEntity = characterDB.lootBagEntityOverride;
+                    break;
+            }
+
+            // If character is a monster, set body destroy delay according to character DB settings.
+            BaseMonsterCharacterEntity bmce = this as BaseMonsterCharacterEntity;
+            if (bmce != null && characterDB is MonsterCharacter)
+            {
+                var monsterDB = characterDB as MonsterCharacter;
+                if (monsterDB != null && monsterDB.syncDestroyDelayWithBody)
+                    bmce.SetDestroyDelay(monsterDB.lootBagDestroyDelay);
+            }
+
+            if (IsServer && characterDB.useLootBag)
                 DropLootBag();
         }
 
@@ -44,9 +73,6 @@ namespace MultiplayerARPG
         /// </summary>
         protected virtual void DropLootBag()
         {
-            if (!IsServer)
-                return;
-
             List<CharacterItem> lootItems = GenerateLootItems();
 
             if (lootItems.Count > 0 || characterDB.dropEmptyBag)
@@ -60,7 +86,6 @@ namespace MultiplayerARPG
         {
             List<CharacterItem> lootBagItems = new List<CharacterItem>();
             List<ItemDrop> itemDrops = characterDB.GetRandomItems();
-            Debug.Log("generated " + itemDrops.Count + " loot items");
             foreach (ItemDrop itemDrop in itemDrops)
             {
                 var itemAmount = (short)Random.Range(itemDrop.minAmount <= 0 ? 1 : itemDrop.minAmount, itemDrop.maxAmount);
@@ -79,7 +104,7 @@ namespace MultiplayerARPG
         protected void CreateLootBag(Vector3 position, Quaternion rotation, List<CharacterItem> lootItems)
         {
             BuildingEntity buildingEntity;
-            if (!GameInstance.BuildingEntities.TryGetValue(characterDB.lootBagEntity.EntityId, out buildingEntity))
+            if (!GameInstance.BuildingEntities.TryGetValue(lootBagEntity.EntityId, out buildingEntity))
                 return;
 
             if (!(buildingEntity is LootBagEntity))
@@ -97,12 +122,9 @@ namespace MultiplayerARPG
             bsd.CreatorName = CharacterName;
             LootBagEntity lbe = CurrentGameManager.CreateBuildingEntity(bsd, false) as LootBagEntity;
 
-            string ownerName = EntityTitle;
-            if (this is BasePlayerCharacterEntity)
-                ownerName = CharacterName;
-
-            lbe.SetOwnerName(ownerName);
+            lbe.SetOwnerEntity(this);
             lbe.AddItems(lootItems);
+            lbe.SetDestroyDelay(characterDB.lootBagDestroyDelay);
         }
     }
 }

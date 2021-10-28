@@ -3,15 +3,24 @@ using UnityEngine;
 
 namespace MultiplayerARPG
 {
+    public enum LootBagEntitySelection
+    {
+        Invisible,
+        Visible,
+        Override,
+    };
+
     public abstract partial class BaseCharacter : BaseGameData
     {
         [Category("Loot Bag Settings")]
-        public bool useLootBag = false;
-        public bool dropEmptyBag = false;
-        public LootBagEntity lootBagEntity;
+        public bool useLootBag = true;
+        public bool dropEmptyBag = true;
+        public LootBagEntitySelection lootBagEntity = LootBagEntitySelection.Invisible;
+        public LootBagEntity lootBagEntityOverride;
         public ItemDrop[] randomLootBagItems;
         public ItemDropTable lootBagItemDropTable;
         public int maxRandomLootItems = 5;
+        public float lootBagDestroyDelay = 30;
 
         [System.NonSerialized]
         protected List<ItemDrop> cacheRandomLootBagItems;

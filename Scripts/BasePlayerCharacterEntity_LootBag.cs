@@ -4,7 +4,6 @@ namespace MultiplayerARPG
 {
     public abstract partial class BasePlayerCharacterEntity : BaseCharacterEntity, IPlayerCharacterData
     {
-        private IPlayerCharacterData character;
         private List<CharacterItem> lootBagItems;
 
         /// <summary>
@@ -26,15 +25,19 @@ namespace MultiplayerARPG
                 return base.GenerateLootItems();
         }
 
+        /// <summary>
+        /// Unequips and removes all items from inventory and returns them as loot bag items.
+        /// </summary>
+        /// <returns>items to be added to player loot bag</returns>
         protected List<CharacterItem> GetAllPlayerItems()
         {
             lootBagItems = new List<CharacterItem>();
 
-            // Remove everything from inventory to make room for equipped items.
-            RemoveAllInventoryItems();
-
             if (!characterDB.useLootBag)
                 return lootBagItems;
+
+            // Remove everything from inventory to make room for equipped items.
+            RemoveAllInventoryItems();
 
             UnEquipAll();
 
@@ -59,9 +62,11 @@ namespace MultiplayerARPG
                 itemData.level = item.level;
                 itemData.amount = item.amount;
 
-                if (this.NonEquipItems.DecreaseItemsByIndex(this.IndexOfNonEquipItem(item.id), item.amount, GameInstance.Singleton.IsLimitInventorySlot))
+                if (NonEquipItems.DecreaseItemsByIndex(this.IndexOfNonEquipItem(item.id), item.amount, GameInstance.Singleton.IsLimitInventorySlot))
                     lootBagItems.Add(itemData);
             }
+
+            NonEquipItems.FillEmptySlots(CurrentGameInstance.IsLimitInventorySlot, CurrentGameInstance.baseSlotLimit);
         }
 
         /// <summary>
@@ -69,15 +74,16 @@ namespace MultiplayerARPG
         /// </summary>
         protected void UnEquipAll()
         {
-            character = this as BasePlayerCharacterEntity;
+            // Make sure all slots are empty
+            for (int i = 0; i < NonEquipItems.Count; i++)
+            {
+                NonEquipItems[i] = CharacterItem.CreateEmptySlot();
+            }
 
-            // EquipItems
+            // Unequp armor items
             for (int i = EquipItems.Count - 1; i >= 0; i--)
             {
-                CharacterItem unEquipItem = character.EquipItems[i];
-                if (unEquipItem.NotEmptySlot() && character.UnEquipItemWillOverwhelming())
-                    continue;
-                
+                CharacterItem unEquipItem = EquipItems[i];
                 EquipItems.RemoveAt(i);
 
                 if (unEquipItem.NotEmptySlot())
@@ -87,7 +93,7 @@ namespace MultiplayerARPG
                 }
             }
 
-             // Selectable weapons
+             // Unequip selectable weapons
             for (int i = SelectableWeaponSets.Count -1; i >= 0; i--)
             {
                 EquipWeapons set = SelectableWeaponSets[i];
@@ -95,22 +101,22 @@ namespace MultiplayerARPG
                 var leftHandWeapon = set.leftHand;
                 var rightHandWeapon = set.rightHand;
 
-                if (!leftHandWeapon.IsEmptySlot() && !character.UnEquipItemWillOverwhelming())
+                if (!leftHandWeapon.IsEmptySlot())
                 {
                     CharacterItem unEquipItem = leftHandWeapon;
                     set.leftHand = CharacterItem.Empty;
                     this.AddOrSetNonEquipItems(unEquipItem);            
                 }
 
-                if (!rightHandWeapon.IsEmptySlot() && !character.UnEquipItemWillOverwhelming())
+                if (!rightHandWeapon.IsEmptySlot())
                 {
                     CharacterItem unEquipItem = rightHandWeapon;
                     set.rightHand = CharacterItem.Empty;
                     this.AddOrSetNonEquipItems(unEquipItem);
-                }
-
-                this.FillEmptySlots();
+                }   
             }
+
+            this.FillEmptySlots();
         }
     }
 }

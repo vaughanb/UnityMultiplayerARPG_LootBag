@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +5,7 @@ namespace MultiplayerARPG
 {
     public class ActivateButtonActivator_LootBag : MonoBehaviour
     {
-        public GameObject[] activateObjects;
+        public List<GameObject> activateObjects;
         public TextWrapper buttonTextWrapper;
         public string activateButtonText = "ACTIVE";
         public string lootButtonText = "LOOT";
@@ -16,6 +15,11 @@ namespace MultiplayerARPG
         private ShooterPlayerCharacterController shooterController;
         private BuildingEntity targetBuilding;
         
+        public ActivateButtonActivator_LootBag()
+        {
+            activateObjects = new List<GameObject>();
+        }
+
         private void LateUpdate()
         {
             canActivate = false;
@@ -44,12 +48,20 @@ namespace MultiplayerARPG
                 }
             }
 
+            // Set the target loot bag entity in GameInstance so we can reference it elsewhere
+            if (targetBuilding != null && targetBuilding is LootBagEntity)
+                GameInstance.Singleton.targetLootBagEntity = targetBuilding as LootBagEntity;
+
+            if (activateObjects == null)
+                return;
+
             foreach (GameObject obj in activateObjects)
             {
                 obj.SetActive(canActivate);
             }
 
-            if (targetBuilding != null && targetBuilding is LootBagEntity)
+            // Set Activate button text depending on target building type
+            if (targetBuilding != null && targetBuilding is LootBagEntity) 
                 buttonTextWrapper.text = lootButtonText;
             else
                 buttonTextWrapper.text = activateButtonText;

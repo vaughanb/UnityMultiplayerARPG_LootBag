@@ -11,8 +11,8 @@ namespace MultiplayerARPG
         /// <summary>
         /// Adds items to loot bag storage
         /// </summary>
-        /// <param name="storageId"></param>
-        /// <param name="addingItem"></param>
-        UniTask<bool> AddLootBagItems(StorageId storageId, CharacterItem addingItem);
+        /// <param name="storageId">ID of loot bag storage</param>
+        /// <param name="lootItems">items to add to loot bag</param>
+        UniTask<bool> AddLootBagItems(StorageId storageId, List<CharacterItem> lootItems);
     }
 }
