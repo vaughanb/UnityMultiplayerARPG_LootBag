@@ -18,10 +18,14 @@ namespace MultiplayerARPG
         public LootBagEntitySelection lootBagEntity = LootBagEntitySelection.Invisible;
         public LootBagEntity lootBagEntityOverride;
         public ItemDrop[] randomLootBagItems;
-        public ItemDropTable lootBagItemDropTable;
+        public ItemDropTable[] lootBagItemDropTables;
         public int maxRandomLootItems = 5;
         public float lootBagDestroyDelay = 30;
 
+        [System.NonSerialized]
+        private List<ItemDrop> certainDropItems = new List<ItemDrop>();
+        [System.NonSerialized]
+        private List<ItemDrop> uncertainDropItems = new List<ItemDrop>();
         [System.NonSerialized]
         protected List<ItemDrop> cacheRandomLootBagItems;
 
@@ -67,18 +71,35 @@ namespace MultiplayerARPG
                             cacheRandomLootBagItems.Add(randomLootBagItems[i]);
                         }
                     }
-                    if (lootBagItemDropTable != null &&
-                        lootBagItemDropTable.randomItems != null &&
-                        lootBagItemDropTable.randomItems.Length > 0)
+
+                    if (lootBagItemDropTables != null && lootBagItemDropTables.Length > 0)
                     {
-                        for (i = 0; i < lootBagItemDropTable.randomItems.Length; ++i)
+                        foreach (ItemDropTable itemDropTable in lootBagItemDropTables)
                         {
-                            if (lootBagItemDropTable.randomItems[i].item == null ||
-                                lootBagItemDropTable.randomItems[i].maxAmount <= 0 ||
-                                lootBagItemDropTable.randomItems[i].dropRate <= 0)
-                                continue;
-                            cacheRandomLootBagItems.Add(lootBagItemDropTable.randomItems[i]);
+                            if (itemDropTable != null && 
+                                itemDropTable.randomItems != null && 
+                                itemDropTable.randomItems.Length > 0)
+                            {
+                                for (i = 0; i < itemDropTable.randomItems.Length; ++i)
+                                {
+                                    if (itemDropTable.randomItems[i].item == null ||
+                                        itemDropTable.randomItems[i].maxAmount <= 0 ||
+                                        itemDropTable.randomItems[i].dropRate <= 0)
+                                        continue;
+                                    cacheRandomLootBagItems.Add(itemDropTable.randomItems[i]);
+                                }
+                            }
                         }
+                    }
+                    cacheRandomLootBagItems.Sort((a, b) => b.dropRate.CompareTo(a.dropRate));
+                    certainDropItems.Clear();
+                    uncertainDropItems.Clear();
+                    for (i = 0; i < cacheRandomLootBagItems.Count; ++i)
+                    {
+                        if (cacheRandomLootBagItems[i].dropRate >= 1f)
+                            certainDropItems.Add(cacheRandomLootBagItems[i]);
+                        else
+                            uncertainDropItems.Add(cacheRandomLootBagItems[i]);
                     }
                 }
                 return cacheRandomLootBagItems;

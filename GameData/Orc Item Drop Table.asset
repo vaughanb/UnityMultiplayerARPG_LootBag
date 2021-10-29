@@ -29,15 +29,31 @@ MonoBehaviour:
     minAmount: 0
     maxAmount: 1
     dropRate: 0.5
-  - item: {fileID: 11400000, guid: 64774d4b5cf3f9846a2d2088fb52e44a, type: 2}
-    minAmount: 0
-    maxAmount: 1
-    dropRate: 0.1
   - item: {fileID: 11400000, guid: e43af8a3a8f9a7a478dc243c7b15ff5f, type: 2}
     minAmount: 0
     maxAmount: 1
     dropRate: 0.1
+  - item: {fileID: 11400000, guid: 66401780aa1f1a24782d11c6980883b2, type: 2}
+    minAmount: 0
+    maxAmount: 1
+    dropRate: 0.1
   - item: {fileID: 11400000, guid: f913fbdc47f19a4408bc793331f9583a, type: 2}
+    minAmount: 0
+    maxAmount: 1
+    dropRate: 0.1
+  - item: {fileID: 11400000, guid: 4ec23479e56964a4fb4f2cbd63adf628, type: 2}
+    minAmount: 0
+    maxAmount: 1
+    dropRate: 0.1
+  - item: {fileID: 11400000, guid: 99ce6353c3a0b344bb452d0b2035feed, type: 2}
+    minAmount: 0
+    maxAmount: 1
+    dropRate: 0.1
+  - item: {fileID: 11400000, guid: 4519d6286cf69b142ac9894ff8e06a31, type: 2}
+    minAmount: 0
+    maxAmount: 1
+    dropRate: 0.1
+  - item: {fileID: 11400000, guid: 93c389fe9d40638469bffd9de26d31ba, type: 2}
     minAmount: 0
     maxAmount: 1
     dropRate: 0.1
