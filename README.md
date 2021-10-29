@@ -38,7 +38,7 @@ Necessary UI elements will be automatically added to UISceneGameplay at runtime.
 ### Players
 Player characters can also be configured to drop loot on death. To do this:
 
-1. Open the PlayerCharacter GameData file. Under 'Loot Bag Settings'. Under 'Loot Bag Settings', select 'Use Loot Bag' and drag either the provided visible or invisible LootBagEntity prefab onto the 'LootBagEntity' field. For players, it is recommended to use the visible loot bag entity.
+1. Open the PlayerCharacter GameData file. Under 'Loot Bag Settings'. Under 'Loot Bag Settings', select 'Use Loot Bag' and select either the Visible or Invisible loot bag entity from the list. For players, it is recommended to use the visible loot bag entity.
 
 2. Under 'Random Loot Bag Items' you can add random loot items the same as for monsters OR select 'Drop All Player Items'.
 
