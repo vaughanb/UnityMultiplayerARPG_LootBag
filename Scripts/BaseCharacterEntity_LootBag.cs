@@ -84,14 +84,7 @@ namespace MultiplayerARPG
         /// </summary>
         protected virtual List<CharacterItem> GenerateLootItems()
         {
-            List<CharacterItem> lootBagItems = new List<CharacterItem>();
-            List<ItemDrop> itemDrops = characterDB.GetRandomItems();
-            foreach (ItemDrop itemDrop in itemDrops)
-            {
-                var itemAmount = (short)Random.Range(itemDrop.minAmount <= 0 ? 1 : itemDrop.minAmount, itemDrop.maxAmount);
-                lootBagItems.Add(CharacterItem.Create(itemDrop.item, 1, itemAmount));
-            }
-            return lootBagItems;
+            return characterDB.GetRandomItems();
         }
 
         [ServerRpc]

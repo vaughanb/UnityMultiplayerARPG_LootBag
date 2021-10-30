@@ -33,19 +33,28 @@ namespace MultiplayerARPG
         /// Returns a random collection of item drops.
         /// </summary>
         /// <returns>list of random item drops</returns>
-        public List<ItemDrop> GetRandomItems()
+        public List<CharacterItem> GetRandomItems()
         {
-            List<ItemDrop> itemDrops = new List<ItemDrop>();
-            for (int countDrops = 0; countDrops < CacheLootBagRandomItems.Count && countDrops < maxRandomLootItems; ++countDrops)
-            {
-                ItemDrop randomItem = CacheLootBagRandomItems[Random.Range(0, CacheLootBagRandomItems.Count)];
-                if (randomItem.item == null || randomItem.maxAmount == 0 || Random.value > randomItem.dropRate)
-                    continue;
+            List<CharacterItem> LootItems = new List<CharacterItem>();
 
-                itemDrops.Add(randomItem);
+            if (CacheLootBagRandomItems.Count > 0)
+            {
+                ItemDrop randomItem;
+                for (int countDrops = 0; countDrops < CacheLootBagRandomItems.Count && countDrops < maxRandomLootItems; ++countDrops)
+                {
+                    randomItem = CacheLootBagRandomItems[Random.Range(0, CacheLootBagRandomItems.Count)];
+                    if (Random.value > randomItem.dropRate)
+                        continue;
+                    LootItems.Add(CharacterItem.Create(randomItem.item.DataId, 1, (short)Random.Range(randomItem.minAmount <= 0 ? 1 : randomItem.minAmount, randomItem.maxAmount)));
+                }
+                if (LootItems.Count == 0)
+                {
+                    randomItem = CacheLootBagRandomItems[Random.Range(0, CacheLootBagRandomItems.Count)];
+                    LootItems.Add(CharacterItem.Create(randomItem.item.DataId, 1, (short)Random.Range(randomItem.minAmount <= 0 ? 1 : randomItem.minAmount, randomItem.maxAmount)));
+                }
             }
 
-            return itemDrops;
+            return LootItems;
         }
 
         /// <summary>

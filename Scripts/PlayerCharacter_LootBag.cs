@@ -4,6 +4,10 @@ namespace MultiplayerARPG
     {
         [Category("Loot Bag Settings")]
         public bool dropAllPlayerItems = false;
+        public bool dropLootInNonPVPAreas = true;
+        public bool dropLootInPVPAreas = true;
+        public bool dropLootInFactionPVPAreas = true;
+        public bool dropLootInGuildPVPAreas = true;
 
         public PlayerCharacter()
         {

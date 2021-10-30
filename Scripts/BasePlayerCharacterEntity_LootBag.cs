@@ -12,6 +12,8 @@ namespace MultiplayerARPG
         /// <returns>loot bag items</returns>
         protected override List<CharacterItem> GenerateLootItems()
         {
+            List<CharacterItem> lootItems = new List<CharacterItem>();
+
             if (characterDB == null)
             {
                 PlayerCharacter playerCharacter;
@@ -19,10 +21,23 @@ namespace MultiplayerARPG
                 characterDB = playerCharacter;
             }
 
-            if ((characterDB as PlayerCharacter).dropAllPlayerItems)
-                return GetAllPlayerItems();
+            PlayerCharacter playerDB = characterDB as PlayerCharacter;
+            if (playerDB == null)
+                return lootItems;
+
+            MapInfo mapInfo = CurrentMapInfo as MapInfo;
+            if ((!playerDB.dropLootInNonPVPAreas && mapInfo.pvpMode == PvpMode.None) ||
+                (!playerDB.dropLootInPVPAreas && mapInfo.pvpMode == PvpMode.Pvp) ||
+                (!playerDB.dropLootInFactionPVPAreas && mapInfo.pvpMode == PvpMode.FactionPvp) || 
+                (!playerDB.dropLootInGuildPVPAreas && mapInfo.pvpMode == PvpMode.GuildPvp))
+                return lootItems;
+
+            if (playerDB.dropAllPlayerItems)
+                lootItems = GetAllPlayerItems();
             else
-                return base.GenerateLootItems();
+                lootItems = base.GenerateLootItems();
+
+            return lootItems;
         }
 
         /// <summary>
