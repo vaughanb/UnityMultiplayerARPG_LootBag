@@ -39,6 +39,9 @@ namespace MultiplayerARPG
                 return;
             }
 
+            if (!characterDB.useLootBag)
+                return;
+
             // Determine which loot bag entity to use based on character DB.
             switch (characterDB.lootBagEntity)
             {

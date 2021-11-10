@@ -13,6 +13,8 @@ namespace MultiplayerARPG
     public abstract partial class BaseCharacter : BaseGameData
     {
         [Category("Loot Bag Settings")]
+        [Tooltip("This must be selected if you wish for the character to drop a loot bag on death.")]
+        public bool useLootBag = false;
         [Tooltip("If selected, character will drop a loot bag on death, whether it has items or not.")]
         public bool dropEmptyBag = true;
         [Tooltip("Which loot bag entity should be used? Invisible simulated loot from body. Visible drops an actual bag. Override to use your own.")]
