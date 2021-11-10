@@ -13,13 +13,19 @@ namespace MultiplayerARPG
     public abstract partial class BaseCharacter : BaseGameData
     {
         [Category("Loot Bag Settings")]
-        public bool useLootBag = true;
+        [Tooltip("If selected, character will drop a loot bag on death, whether it has items or not.")]
         public bool dropEmptyBag = true;
+        [Tooltip("Which loot bag entity should be used? Invisible simulated loot from body. Visible drops an actual bag. Override to use your own.")]
         public LootBagEntitySelection lootBagEntity = LootBagEntitySelection.Invisible;
+        [Tooltip("This loot bag entity will be used instead of the provided ones if selected.")]
         public LootBagEntity lootBagEntityOverride;
+        [Tooltip("Random items that will be generated for loot bag on death.")]
         public ItemDrop[] randomLootBagItems;
-        public ItemDropTable[] lootBagItemDropTables;
+        [Tooltip("Item tables containing multiple random items that can ben generated for loot bag on death.")]
+        public LootBagItemTable[] lootBagItemTables;
+        [Tooltip("Maximum loot items to drop. If set to 0, maximum is ignored.")]
         public int maxLootItems = 5;
+        [Tooltip("How long in seconds after dropping should loot bag be destroyed?")]
         public float lootBagDestroyDelay = 30;
 
         [System.NonSerialized]
@@ -28,19 +34,18 @@ namespace MultiplayerARPG
         private List<ItemDrop> uncertainLootItems = new List<ItemDrop>();
 
         [System.NonSerialized]
-        private List<ItemDrop> cacheRandomLootItems = null;
+        protected List<ItemDrop> cacheRandomLootItems = null;
         public List<ItemDrop> CacheRandomLootItems
         {
             get
             {
                 if (cacheRandomLootItems == null)
                 {
-                    int i;
                     cacheRandomLootItems = new List<ItemDrop>();
                     if (randomLootBagItems != null &&
                         randomLootBagItems.Length > 0)
                     {
-                        for (i = 0; i < randomLootBagItems.Length; ++i)
+                        for (int i = 0; i < randomLootBagItems.Length; ++i)
                         {
                             if (randomLootBagItems[i].item == null ||
                                 randomLootBagItems[i].maxAmount <= 0 ||
@@ -49,16 +54,16 @@ namespace MultiplayerARPG
                             cacheRandomLootItems.Add(randomLootBagItems[i]);
                         }
                     }
-                    if (lootBagItemDropTables != null &&
-                        lootBagItemDropTables.Length > 0)
+                    if (lootBagItemTables != null &&
+                        lootBagItemTables.Length > 0)
                     {
-                        foreach (ItemDropTable itemDropTable in lootBagItemDropTables)
+                        foreach (LootBagItemTable itemDropTable in lootBagItemTables)
                         {
                             if (itemDropTable != null &&
                                 itemDropTable.randomItems != null &&
                                 itemDropTable.randomItems.Length > 0)
                             {
-                                for (i = 0; i < itemDropTable.randomItems.Length; ++i)
+                                for (int i = 0; i < itemDropTable.randomItems.Length; ++i)
                                 {
                                     if (itemDropTable.randomItems[i].item == null ||
                                         itemDropTable.randomItems[i].maxAmount <= 0 ||
@@ -72,7 +77,7 @@ namespace MultiplayerARPG
                     cacheRandomLootItems.Sort((a, b) => b.dropRate.CompareTo(a.dropRate));
                     certainLootItems.Clear();
                     uncertainLootItems.Clear();
-                    for (i = 0; i < cacheRandomLootItems.Count; ++i)
+                    for (int i = 0; i < cacheRandomLootItems.Count; ++i)
                     {
                         if (cacheRandomLootItems[i].dropRate >= 1f)
                             certainLootItems.Add(cacheRandomLootItems[i]);
@@ -96,11 +101,10 @@ namespace MultiplayerARPG
                 return items;
 
             int randomDropCount = 0;
-            int i;
 
             // Add certain loot rate items
             certainLootItems.Shuffle();
-            for (i = 0; i < certainLootItems.Count && randomDropCount < maxLootItems; ++i)
+            for (int i = 0; i < certainLootItems.Count && (maxLootItems == 0 || randomDropCount < maxLootItems); ++i)
             {
                 short amount = (short)Random.Range(certainLootItems[i].minAmount <= 0 ? 1 : certainLootItems[i].minAmount, certainLootItems[i].maxAmount);
                 items.Add(CharacterItem.Create(certainLootItems[i].item, 1, amount));
@@ -113,7 +117,7 @@ namespace MultiplayerARPG
             
             // Add uncertain loot rate items
             uncertainLootItems.Shuffle();
-            for (i = 0; i < uncertainLootItems.Count && randomDropCount < maxLootItems; ++i)
+            for (int i = 0; i < uncertainLootItems.Count && (maxLootItems == 0 || randomDropCount < maxLootItems); ++i)
             {
                 if (Random.value >= uncertainLootItems[i].dropRate)
                     continue;
@@ -124,6 +128,14 @@ namespace MultiplayerARPG
             }
 
             return items;
+        }
+
+        /// <summary>
+        /// Resets data caches. Should be called on startup to refresh changes in game data.
+        /// </summary>
+        public virtual void ResetCaches()
+        {
+            cacheRandomLootItems = null;
         }
     }
 }

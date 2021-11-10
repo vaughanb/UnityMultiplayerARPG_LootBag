@@ -284,7 +284,8 @@ MonoBehaviour:
   defaultLootName: Loot
   nameLootAfterOwner: 1
   appendToLootName: 
-  destroyLootBagWhenEmpty: 0
+  destroyLootBagWhenEmpty: 1
+  destroyLootBagWithBody: 1
   immuneToDamage: 1
   lootBagSparkleEffect: {fileID: 2566083321149910440}
   showSparkleEffect: 1

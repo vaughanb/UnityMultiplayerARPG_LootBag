@@ -23,7 +23,7 @@ namespace MultiplayerARPG
         /// </summary>
         protected void OnReceivedDamage(Vector3 fromPosition, IGameEntity attacker, CombatAmountType combatAmountType, int damage, CharacterItem weapon, BaseSkill skill, short skillLevel)
         {
-            if (this.IsDead())
+            if (IsServer && this.IsDead())
                 OnDeath();
         }
 
@@ -55,6 +55,8 @@ namespace MultiplayerARPG
                     break;
             }
 
+            DropLootBag();
+
             // If character is a monster, set body destroy delay according to character DB settings.
             BaseMonsterCharacterEntity bmce = this as BaseMonsterCharacterEntity;
             if (bmce != null && characterDB is MonsterCharacter)
@@ -63,9 +65,6 @@ namespace MultiplayerARPG
                 if (monsterDB != null && monsterDB.syncDestroyDelayWithBody)
                     bmce.SetDestroyDelay(monsterDB.lootBagDestroyDelay);
             }
-
-            if (IsServer && characterDB.useLootBag)
-                DropLootBag();
         }
 
         /// <summary>
@@ -103,6 +102,10 @@ namespace MultiplayerARPG
             if (!(buildingEntity is LootBagEntity))
                 return;
 
+            string creatorName = EntityTitle;
+            if (this is BasePlayerCharacterEntity)
+                creatorName = CharacterName;
+
             BuildingSaveData bsd = new BuildingSaveData();
             bsd.Id = GenericUtils.GetUniqueId();
             bsd.ParentId = string.Empty;
@@ -112,11 +115,11 @@ namespace MultiplayerARPG
             bsd.Position = position;
             bsd.Rotation = rotation;
             bsd.CreatorId = Id;
-            bsd.CreatorName = CharacterName;
+            bsd.CreatorName = creatorName;
             LootBagEntity lbe = CurrentGameManager.CreateBuildingEntity(bsd, false) as LootBagEntity;
 
             lbe.SetOwnerEntity(this);
-            lbe.AddItems(lootItems);
+            lbe.AddItems(lootItems).Forget();
             lbe.SetDestroyDelay(characterDB.lootBagDestroyDelay);
         }
     }

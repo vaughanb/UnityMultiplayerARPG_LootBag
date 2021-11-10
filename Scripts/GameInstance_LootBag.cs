@@ -7,5 +7,14 @@ namespace MultiplayerARPG
     {
         public Dictionary<string, LootBagEntity> LootBagEntities;
         public LootBagEntity targetLootBagEntity;
+
+        [DevExtMethods("LoadedGameData")]
+        public void GameDataLoaded_DevExt()
+        {
+            foreach (KeyValuePair<int, PlayerCharacter> pc in PlayerCharacters)
+            {
+                pc.Value.ResetCaches();
+            }
+        }
     }
 }

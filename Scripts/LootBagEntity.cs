@@ -25,49 +25,59 @@ namespace MultiplayerARPG
         private BaseCharacterEntity ownerEntity;
         private bool initialized = false;
         private bool _dirtyIsOpen;
+        private bool ownerSet = false;
         private DateTime setupTime;
 
         [Category("Sync Fields")]
-        protected SyncFieldString ownerName = new SyncFieldString();
+        protected SyncFieldUInt ownerObjectID = new SyncFieldUInt();
         protected SyncFieldBool hasItems = new SyncFieldBool();
 
-        protected string OwnerName
+        protected uint OwnerObjectID
         {
-            get { return ownerName.Value; }
-            set { ownerName.Value = value; }
+            get { return ownerObjectID.Value; }
+            set { ownerObjectID.Value = value; }
         }
 
         protected bool HasItems
         {
-            get { return hasItems.Value; }
-            set { hasItems.Value = value; }
+            get 
+            { 
+                return hasItems.Value; 
+            }
+            set 
+            {
+                if (value != hasItems.Value)
+                    hasItems.Value = value; 
+            }
         }
 
         public override void OnSetup()
         {
             base.OnSetup();
 
-            // storageId = new StorageId(StorageType.Building, Id);
             IsImmune = immuneToDamage;
 
-            if (showSparkleEffect && lootBagSparkleEffect != null && sparkleOnlyWhenItemsInBag)
-                lootBagSparkleEffect.SetActive(HasItems);
+            if (IsClient)
+            {
+                if (showSparkleEffect && lootBagSparkleEffect != null)
+                {
+                    if (sparkleOnlyWhenItemsInBag)
+                        lootBagSparkleEffect.SetActive(HasItems);
+                    else
+                        lootBagSparkleEffect.SetActive(true);
+                }
 
-            if (RemainsLifeTime == 0)
-                RemainsLifeTime = LifeTime;
-
-            SetLootBagName();
-
-            setupTime = DateTime.Now;
+                setupTime = DateTime.Now;
+            }
         }
 
         protected override void SetupNetElements()
         {
             base.SetupNetElements();
-            ownerName.deliveryMethod = DeliveryMethod.ReliableOrdered;
-            ownerName.syncMode = LiteNetLibSyncField.SyncMode.ServerToClients;
             hasItems.deliveryMethod = DeliveryMethod.ReliableOrdered;
             hasItems.syncMode = LiteNetLibSyncField.SyncMode.ServerToClients;
+            ownerObjectID.deliveryMethod = DeliveryMethod.ReliableOrdered;
+            ownerObjectID.syncMode = LiteNetLibSyncField.SyncMode.ServerToClients;
         }
 
         protected override void EntityUpdate()
@@ -83,25 +93,71 @@ namespace MultiplayerARPG
                     isOpen.Value = updatingIsOpen;
                 }
 
-                if (RemainsLifeTime <= 0)
-                    Destroy();
+                if (lifeTime > 0f)
+                {
+                    RemainsLifeTime -= Time.deltaTime;
+                    if (RemainsLifeTime < 0)
+                    {
+                        RemainsLifeTime = 0f;
+                        Destroy();
+                    }
+                }
 
                 if (initialized && destroyLootBagWhenEmpty && !HasItems)
                     Destroy();
-
-                if (destroyLootBagWithBody && ownerEntity == null)
-                    Destroy();
             }
 
-            if (HasItems || DateTime.Now > setupTime.AddSeconds(3))
-                initialized = true;
+            if (IsClient)
+            {
+                if (HasItems || DateTime.Now > setupTime.AddSeconds(3))
+                    initialized = true;
 
-            if (initialized && showSparkleEffect && lootBagSparkleEffect != null && sparkleOnlyWhenItemsInBag)
-                lootBagSparkleEffect.SetActive(HasItems);
+                if (initialized)
+                {
+                    if (showSparkleEffect && lootBagSparkleEffect != null)
+                    {
+                        if (sparkleOnlyWhenItemsInBag)
+                            lootBagSparkleEffect.SetActive(HasItems);
+                        else
+                            lootBagSparkleEffect.SetActive(true);
+                    }
+
+                    if (destroyLootBagWithBody)
+                    {
+                        if (!ownerSet && ownerEntity == null)
+                            FindOwnerEntity();
+
+                        if (ownerEntity == null)
+                        {
+                            lootBagSparkleEffect.SetActive(false);
+                            Destroy();
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
-        /// Sets the loot bag's owner entity.
+        /// Finds the BaseCharacterEntity with the same ID as the storage's creator and sets it as the ownerEntity.
+        /// Called by CLIENT only.
+        /// </summary>
+        protected void FindOwnerEntity()
+        {
+            BaseCharacterEntity[] characters = FindObjectsOfType<BaseCharacterEntity>();
+            foreach (BaseCharacterEntity bce in characters)
+            {
+                if (bce.ObjectId == OwnerObjectID)
+                {
+                    ownerEntity = bce;
+                    ownerSet = true;
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sets the loot bag's owner entity. 
+        /// Called by SERVER only.
         /// </summary>
         /// <param name="entity">entity that dropped the loot bag</param>
         public void SetOwnerEntity(BaseCharacterEntity entity)
@@ -110,12 +166,12 @@ namespace MultiplayerARPG
             if (ownerEntity == null)
                 return;
 
-            string entityName = ownerEntity.EntityTitle;
-            if (ownerEntity is BasePlayerCharacterEntity)
-                entityName = ownerEntity.CharacterName;
+            OwnerObjectID = entity.ObjectId;
 
-            if (!string.IsNullOrEmpty(entityName))
-                OwnerName = entityName;
+            if (entity is BasePlayerCharacterEntity)
+                Title = entity.CharacterName;
+            else
+                Title = entity.GetDatabase().DefaultTitle;
 
             SetLootBagName();
         }
@@ -125,23 +181,20 @@ namespace MultiplayerARPG
         /// </summary>
         public void SetLootBagName()
         {
-            string lootName = "";
-            if (nameLootAfterOwner && !string.IsNullOrEmpty(OwnerName))
-                lootName += OwnerName;
-            
-            if (lootName == "")
-                lootName = defaultLootName;
+            if (Title != "")
+            {
+                if (nameLootAfterOwner)
+                    Title += appendToLootName;
+            }
             else
-                lootName += appendToLootName;
-            
-            entityTitle = lootName;
+                Title = defaultLootName;
         }
 
         /// <summary>
         /// Adds the provided character items to the loot bag storage.
         /// </summary>
         /// <param name="lootItems">items to add to loot bag</param>
-        public void AddItems(List<CharacterItem> lootItems)
+        public async UniTaskVoid AddItems(List<CharacterItem> lootItems)
         {
             if (!IsServer)
                 return;
@@ -156,10 +209,17 @@ namespace MultiplayerARPG
                 lootItemClones.Add(lootItem.Clone());
             }
 
-            AddItemsToStorage(lootItems).Forget();
+            bool itemsAdded = await AddItemsToStorage(lootItems);
+            if (itemsAdded)
+                initialized = true;
         }
 
-        protected async UniTaskVoid AddItemsToStorage(List<CharacterItem> lootItems)
+        /// <summary>
+        /// Adds the specified items to the loot bag and returns true once done.
+        /// </summary>
+        /// <param name="lootItems">items to add to loot bag</param>
+        /// <returns>true</returns>
+        protected async UniTask<bool> AddItemsToStorage(List<CharacterItem> lootItems)
         {
             List<BaseItem> items = new List<BaseItem>();
             foreach (CharacterItem item in lootItems)
@@ -170,6 +230,7 @@ namespace MultiplayerARPG
 
             StorageId storageId = new StorageId(StorageType.Building, Id);
             await GameInstance.ServerStorageHandlers.AddLootBagItems(storageId, lootItems);
+            return true;
         }
 
         /// <summary>
@@ -178,8 +239,8 @@ namespace MultiplayerARPG
         /// <param name="delay">number of seconds before destroying</param>
         public void SetDestroyDelay(float delay)
         {
-            this.lifeTime = delay;
-            this.RemainsLifeTime = delay;
+            lifeTime = delay;
+            RemainsLifeTime = delay;
         }
     }
 }
