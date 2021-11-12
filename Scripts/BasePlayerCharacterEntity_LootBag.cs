@@ -74,31 +74,7 @@ namespace MultiplayerARPG
                 if (playerDB.maxLootItems > 0 && lootBagItems.Count >= playerDB.maxLootItems)
                     return;
 
-                bool remove = false;
-                if (playerDB.CacheFilterLootItems.Count > 0)
-                {
-                    foreach (LootBagFilterItem certainItem in playerDB.CertainFilterLootItems)
-                    {
-                        if (NonEquipItems[i].GetItem().DataId == certainItem.item.DataId)
-                        {
-                            remove = true;
-                            goto Remove;
-                        }
-                    }
-                    foreach (LootBagFilterItem uncertainItem in playerDB.UncertainFilterLootItems)
-                    {
-                        if (NonEquipItems[i].GetItem().DataId == uncertainItem.item.DataId && Random.value <= uncertainItem.dropRate)
-                        {
-                            remove = true;
-                            break;
-                        }
-                    }
-                } 
-                else
-                    remove = true;
-
-                Remove:
-                if (remove)
+                if (ShouldDrop(NonEquipItems[i]))
                     DropInventoryItem(NonEquipItems[i]);
             }
         }
@@ -131,31 +107,7 @@ namespace MultiplayerARPG
                 if (unEquipItem.IsEmptySlot())
                     continue;
 
-                bool remove = false;
-                if (playerDB.CacheFilterLootItems.Count > 0)
-                {
-                    foreach (LootBagFilterItem filterItem in playerDB.CertainFilterLootItems)
-                    {
-                        if (unEquipItem.GetItem().DataId == filterItem.item.DataId)
-                        {
-                            remove = true;
-                            goto Remove;
-                        }
-                    }
-                    foreach (LootBagFilterItem filterItem in playerDB.UncertainFilterLootItems)
-                    {
-                        if (unEquipItem.GetItem().DataId == filterItem.item.DataId && Random.value <= filterItem.dropRate)
-                        {
-                            remove = true;
-                            break;
-                        }
-                    }
-                }
-                else
-                    remove = true;
-
-                Remove:
-                if (remove)
+                if (ShouldDrop(unEquipItem))
                 {
                     EquipItems.RemoveAt(i);
                     this.AddOrSetNonEquipItems(unEquipItem);
@@ -185,31 +137,7 @@ namespace MultiplayerARPG
                     if (playerDB.maxLootItems > 0 && lootBagItems.Count >= playerDB.maxLootItems)
                         return;
 
-                    bool remove = false;
-                    if (playerDB.CacheFilterLootItems.Count > 0)
-                    {
-                        foreach (LootBagFilterItem certainItem in playerDB.CertainFilterLootItems)
-                        {
-                            if (leftHandWeapon.GetItem().DataId == certainItem.item.DataId)
-                            {
-                                remove = true;
-                                goto RemoveLeft;
-                            }
-                        }
-                        foreach (LootBagFilterItem uncertainItem in playerDB.UncertainFilterLootItems)
-                        {
-                            if (leftHandWeapon.GetItem().DataId == uncertainItem.item.DataId && Random.value <= uncertainItem.dropRate)
-                            {
-                                remove = true;
-                                break;
-                            }
-                        }
-                    }
-                    else
-                        remove = true;
-
-                    RemoveLeft:
-                    if (remove)
+                    if (ShouldDrop(leftHandWeapon))
                     {
                         CharacterItem unEquipItem = leftHandWeapon;
                         set.leftHand = CharacterItem.Empty;
@@ -225,31 +153,7 @@ namespace MultiplayerARPG
                     if (playerDB.maxLootItems > 0 && lootBagItems.Count >= playerDB.maxLootItems)
                         return;
 
-                    bool remove = false;
-                    if (playerDB.CacheFilterLootItems.Count > 0)
-                    {
-                        foreach (LootBagFilterItem certainItem in playerDB.CertainFilterLootItems)
-                        {
-                            if (rightHandWeapon.GetItem().DataId == certainItem.item.DataId)
-                            {
-                                remove = true;
-                                goto RemoveRight;
-                            }
-                        }
-                        foreach (LootBagFilterItem uncertainItem in playerDB.UncertainFilterLootItems)
-                        {
-                            if (rightHandWeapon.GetItem().DataId == uncertainItem.item.DataId && Random.value <= uncertainItem.dropRate)
-                            {
-                                remove = true;
-                                break;
-                            }
-                        }
-                    }
-                    else
-                        remove = true;
-
-                    RemoveRight:
-                    if (remove)
+                    if (ShouldDrop(rightHandWeapon))
                     {
                         CharacterItem unEquipItem = rightHandWeapon;
                         set.rightHand = CharacterItem.Empty;
@@ -262,6 +166,43 @@ namespace MultiplayerARPG
             }
 
             this.FillEmptySlots();
+        }
+
+        /// <summary>
+        /// Checks to see if the specified item should drop to the loot bag based on current rules.
+        /// </summary>
+        /// <param name="item">item to drop</param>
+        /// <returns>true if should drop, false otherwise</returns>
+        protected bool ShouldDrop(CharacterItem item)
+        {
+            if (playerDB.CacheFilterLootItems.Count == 0)
+                return true;
+
+            if (playerDB.lootBagItemFilterBehavior == LootBagFilterBehavior.Inclusive)
+            {
+                foreach (LootBagFilterItem fi in playerDB.CacheFilterLootItems)
+                {
+                    if (item.GetItem().DataId == fi.item.DataId)
+                    {
+                        if (fi.dropRate >= 1 || Random.value < fi.dropRate)
+                            return true;
+                    }
+                }
+            }
+            else
+            {
+                bool inFilter = false;
+                foreach (LootBagFilterItem fi in playerDB.CacheFilterLootItems)
+                {
+                    if (item.GetItem().DataId == fi.item.DataId)
+                    {
+                        inFilter = true;
+                        break;
+                    }
+                }
+                return !inFilter;
+            }
+            return false;
         }
     }
 }

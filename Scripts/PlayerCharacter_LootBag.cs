@@ -3,6 +3,12 @@ using UnityEngine;
 
 namespace MultiplayerARPG
 {
+    public enum LootBagFilterBehavior
+    {
+        Inclusive,
+        Exclusive,
+    };
+
     public partial class PlayerCharacter : BaseCharacter
     {
         [Category("Loot Bag Settings")]
@@ -13,8 +19,10 @@ namespace MultiplayerARPG
         public bool dropEquippedArmorItems = false;
         [Tooltip("If selected, player will drop weapon items to loot bag on death.")]
         public bool dropEquippedWeaponItems = false;
-        [Tooltip("Items added to these tables will be the only items dropped by the player character on death.")]
+        [Tooltip("If set, player will drop items according to the items in these tables and the Inclusive/Exclusive behavior specified.")]
         public LootBagItemFilterTable[] lootBagItemFilterTables;
+        [Tooltip("Inclusive means only the items in the table will drop. Exlusive means all items except those in the table will drop.")]
+        public LootBagFilterBehavior lootBagItemFilterBehavior = LootBagFilterBehavior.Inclusive;
 
         [Header("PVP Mode Loot Bag Settings")]
         [Tooltip("Setting this flag to true will allow dropping player loot in non-PVP areas.")]
@@ -25,23 +33,6 @@ namespace MultiplayerARPG
         public bool dropLootInFactionPVPAreas = true;
         [Tooltip("Setting this flag to true will allow dropping player loot in guild PVP areas.")]
         public bool dropLootInGuildPVPAreas = true;
-
-        [System.NonSerialized]
-        private List<LootBagFilterItem> certainFilterLootItems = new List<LootBagFilterItem>();
-        [System.NonSerialized]
-        public List<LootBagFilterItem> uncertainFilterLootItems = new List<LootBagFilterItem>();
-
-        public List<LootBagFilterItem> CertainFilterLootItems
-        {
-            get { return certainFilterLootItems; }
-            private set { certainFilterLootItems = value; }
-        }
-
-        public List<LootBagFilterItem> UncertainFilterLootItems
-        {
-            get { return uncertainFilterLootItems; }
-            private set { uncertainFilterLootItems = value; }
-        }
 
         private List<LootBagFilterItem> cacheFilterLootItems = null;
         public List<LootBagFilterItem> CacheFilterLootItems
@@ -64,16 +55,6 @@ namespace MultiplayerARPG
                                 cacheFilterLootItems.Add(item);
                             }
                         }
-                    }
-
-                    CertainFilterLootItems.Clear();
-                    UncertainFilterLootItems.Clear();
-                    for (int i = 0; i < cacheFilterLootItems.Count; i++)
-                    {
-                        if (cacheFilterLootItems[i].dropRate >= 1f)
-                            CertainFilterLootItems.Add(cacheFilterLootItems[i]);
-                        else
-                            UncertainFilterLootItems.Add(cacheFilterLootItems[i]);
                     }
                 }
                 return cacheFilterLootItems;
